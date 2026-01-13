@@ -1,9 +1,9 @@
 import { useState } from "react";
-import { Task, TaskVisibility, WorkspaceMember } from "@/types/database";
+import { Task, TaskVisibility, TaskStatus, WorkspaceMember } from "@/types/database";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Calendar, Eye, EyeOff, GripVertical, Trash2, Pencil } from "lucide-react";
+import { Calendar, Eye, EyeOff, GripVertical, Trash2, Pencil, ArrowRight, Check } from "lucide-react";
 import { format, isPast, isToday, isTomorrow } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -22,10 +22,12 @@ interface TaskCardProps {
     visibility: TaskVisibility;
     assigned_user_id: string | null;
   }) => Promise<{ error?: string }>;
+  onStatusChange?: (taskId: string, newStatus: TaskStatus, currentStatus: TaskStatus) => Promise<{ error?: string }>;
 }
 
-export function TaskCard({ task, isManager, currentUserId, members = [], onDelete, onUpdate }: TaskCardProps) {
+export function TaskCard({ task, isManager, currentUserId, members = [], onDelete, onUpdate, onStatusChange }: TaskCardProps) {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
   
   const {
     attributes,
@@ -69,6 +71,28 @@ export function TaskCard({ task, isManager, currentUserId, members = [], onDelet
     }
     return { error: 'Update not available' };
   };
+
+  const handleStatusChange = async (newStatus: TaskStatus) => {
+    if (!onStatusChange || isUpdating) return;
+    setIsUpdating(true);
+    await onStatusChange(task.id, newStatus, task.status);
+    setIsUpdating(false);
+  };
+
+  const getNextStatus = (): { status: TaskStatus; label: string } | null => {
+    if (task.status === 'todo') return { status: 'ongoing', label: 'Start' };
+    if (task.status === 'ongoing') return { status: 'completed', label: 'Complete' };
+    return null;
+  };
+
+  const getPrevStatus = (): { status: TaskStatus; label: string } | null => {
+    if (task.status === 'ongoing') return { status: 'todo', label: 'Back to To Do' };
+    if (task.status === 'completed') return { status: 'ongoing', label: 'Reopen' };
+    return null;
+  };
+
+  const nextStatus = getNextStatus();
+  const prevStatus = getPrevStatus();
 
   return (
     <>
@@ -137,7 +161,7 @@ export function TaskCard({ task, isManager, currentUserId, members = [], onDelet
               </p>
             )}
 
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between mb-3">
               <div className={cn("flex items-center gap-1 text-xs", getDeadlineColor())}>
                 <Calendar className="h-3.5 w-3.5" />
                 <span>
@@ -159,6 +183,45 @@ export function TaskCard({ task, isManager, currentUserId, members = [], onDelet
                 </div>
               )}
             </div>
+
+            {/* Status Change Buttons */}
+            {canInteract && onStatusChange && (
+              <div className="flex items-center gap-2 pt-2 border-t border-border">
+                {prevStatus && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 text-xs text-muted-foreground hover:text-foreground"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleStatusChange(prevStatus.status);
+                    }}
+                    disabled={isUpdating}
+                  >
+                    {prevStatus.label}
+                  </Button>
+                )}
+                {nextStatus && (
+                  <Button
+                    variant="default"
+                    size="sm"
+                    className={cn(
+                      "h-7 text-xs ml-auto",
+                      nextStatus.status === 'completed' && "bg-green-600 hover:bg-green-700"
+                    )}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleStatusChange(nextStatus.status);
+                    }}
+                    disabled={isUpdating}
+                  >
+                    {nextStatus.status === 'ongoing' && <ArrowRight className="h-3 w-3 mr-1" />}
+                    {nextStatus.status === 'completed' && <Check className="h-3 w-3 mr-1" />}
+                    {nextStatus.label}
+                  </Button>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>

@@ -63,7 +63,8 @@ function Column({
   currentUserId,
   onAddTask,
   onUpdateTask,
-  onDeleteTask
+  onDeleteTask,
+  onStatusChange
 }: { 
   status: TaskStatus; 
   title: string; 
@@ -80,6 +81,7 @@ function Column({
     assigned_user_id: string | null;
   }) => Promise<{ error?: string }>;
   onDeleteTask: (taskId: string) => void;
+  onStatusChange: (taskId: string, newStatus: TaskStatus, currentStatus: TaskStatus) => Promise<{ error?: string }>;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: status });
   const count = tasks.length;
@@ -123,6 +125,7 @@ function Column({
                 members={members}
                 onUpdate={onUpdateTask}
                 onDelete={onDeleteTask}
+                onStatusChange={onStatusChange}
               />
             ))}
           </SortableContext>
@@ -247,6 +250,7 @@ export function WorkflowBoard({
               onAddTask={() => handleAddTask(column.id)}
               onUpdateTask={handleUpdateTask}
               onDeleteTask={handleDeleteTask}
+              onStatusChange={onUpdateStatus}
             />
           ))}
         </div>
