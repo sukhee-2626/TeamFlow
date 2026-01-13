@@ -39,7 +39,7 @@ export default function WorkspacePage() {
     updateWorkspace
   } = useWorkspaceDetails(id || "");
   const { workflows, createWorkflow, deleteWorkflow } = useWorkflows(id || "");
-  const { tasks, createTask, updateTaskStatus } = useTasks(id || "");
+  const { tasks, createTask, updateTaskStatus, updateTask, deleteTask } = useTasks(id || "");
   
   const [showCreateWorkflow, setShowCreateWorkflow] = useState(false);
   const [activeWorkflow, setActiveWorkflow] = useState<string | null>(null);
@@ -202,6 +202,8 @@ export default function WorkspacePage() {
                   currentUserId={user.id}
                   onUpdateStatus={updateTaskStatus}
                   onCreateTask={createTask}
+                  onUpdateTask={updateTask}
+                  onDeleteTask={deleteTask}
                   onDeleteWorkflow={() => deleteWorkflow(currentWorkflow.id)}
                 />
               ) : (
