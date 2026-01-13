@@ -1,13 +1,15 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Workflow, Task, TaskStatus, TaskVisibility, WorkspaceMember } from "@/types/database";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Plus, MoreVertical } from "lucide-react";
+import { Plus, MoreVertical, Filter, User, Clock, AlertTriangle } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
+  DropdownMenuCheckboxItem,
 } from "@/components/ui/dropdown-menu";
 import {
   DndContext,
@@ -27,6 +29,7 @@ import { useDroppable } from "@dnd-kit/core";
 import { cn } from "@/lib/utils";
 import { QuickTaskDialog } from "./QuickTaskDialog";
 import { TaskCard } from "@/components/tasks/TaskCard";
+import { isPast } from "date-fns";
 
 interface WorkflowBoardProps {
   workflow: Workflow;
@@ -53,6 +56,8 @@ const columns: { id: TaskStatus; title: string }[] = [
   { id: 'ongoing', title: 'In Progress' },
   { id: 'completed', title: 'Done' },
 ];
+
+type FilterType = 'all' | 'my-tasks' | 'overdue';
 
 function Column({ 
   status, 
@@ -87,7 +92,7 @@ function Column({
   const count = tasks.length;
 
   return (
-    <div className="flex-1 min-w-[280px]">
+    <div className="flex-1 min-w-[300px]">
       <div className={cn(
         "rounded-xl p-3 min-h-[400px] transition-colors",
         status === 'todo' && "bg-muted/50",
@@ -114,7 +119,7 @@ function Column({
           </DropdownMenu>
         </div>
 
-        <div ref={setNodeRef} className="space-y-2">
+        <div ref={setNodeRef} className="space-y-3">
           <SortableContext items={tasks.map(t => t.id)} strategy={verticalListSortingStrategy}>
             {tasks.map((task) => (
               <TaskCard 
@@ -162,6 +167,7 @@ export function WorkflowBoard({
   const [activeTask, setActiveTask] = useState<Task | null>(null);
   const [showQuickTask, setShowQuickTask] = useState(false);
   const [quickTaskStatus, setQuickTaskStatus] = useState<TaskStatus>('todo');
+  const [activeFilter, setActiveFilter] = useState<FilterType>('all');
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -171,8 +177,38 @@ export function WorkflowBoard({
     })
   );
 
+  // Filter tasks based on active filter
+  const filteredTasks = useMemo(() => {
+    let result = tasks;
+
+    switch (activeFilter) {
+      case 'my-tasks':
+        result = tasks.filter(t => t.assigned_user_id === currentUserId);
+        break;
+      case 'overdue':
+        result = tasks.filter(t => {
+          const deadline = new Date(t.deadline);
+          return isPast(deadline) && t.status !== 'completed';
+        });
+        break;
+      default:
+        result = tasks;
+    }
+
+    return result;
+  }, [tasks, activeFilter, currentUserId]);
+
+  // Count for filter badges
+  const myTasksCount = useMemo(() => 
+    tasks.filter(t => t.assigned_user_id === currentUserId).length
+  , [tasks, currentUserId]);
+
+  const overdueCount = useMemo(() => 
+    tasks.filter(t => isPast(new Date(t.deadline)) && t.status !== 'completed').length
+  , [tasks]);
+
   const handleDragStart = (event: DragStartEvent) => {
-    const task = tasks.find(t => t.id === event.active.id);
+    const task = filteredTasks.find(t => t.id === event.active.id);
     if (task) {
       setActiveTask(task);
     }
@@ -185,7 +221,7 @@ export function WorkflowBoard({
     if (!over) return;
 
     const taskId = active.id as string;
-    const task = tasks.find(t => t.id === taskId);
+    const task = filteredTasks.find(t => t.id === taskId);
     if (!task) return;
 
     let targetStatus: TaskStatus | null = null;
@@ -193,7 +229,7 @@ export function WorkflowBoard({
     if (columns.some(c => c.id === over.id)) {
       targetStatus = over.id as TaskStatus;
     } else {
-      const overTask = tasks.find(t => t.id === over.id);
+      const overTask = filteredTasks.find(t => t.id === over.id);
       if (overTask) {
         targetStatus = overTask.status;
       }
@@ -208,7 +244,7 @@ export function WorkflowBoard({
   };
 
   const getTasksByStatus = (status: TaskStatus) => 
-    tasks.filter(t => t.status === status);
+    filteredTasks.filter(t => t.status === status);
 
   const handleAddTask = (status: TaskStatus) => {
     setQuickTaskStatus(status);
@@ -231,6 +267,55 @@ export function WorkflowBoard({
 
   return (
     <>
+      {/* Filter Bar */}
+      <div className="flex items-center gap-2 mb-4 flex-wrap">
+        <span className="text-sm text-muted-foreground mr-2">
+          <Filter className="h-4 w-4 inline mr-1" />
+          Filter:
+        </span>
+        
+        <Button
+          variant={activeFilter === 'all' ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => setActiveFilter('all')}
+          className="h-8"
+        >
+          All Tasks
+          <Badge variant="secondary" className="ml-2 h-5 px-1.5">
+            {tasks.length}
+          </Badge>
+        </Button>
+
+        <Button
+          variant={activeFilter === 'my-tasks' ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => setActiveFilter('my-tasks')}
+          className="h-8"
+        >
+          <User className="h-3.5 w-3.5 mr-1" />
+          My Tasks
+          <Badge variant="secondary" className="ml-2 h-5 px-1.5">
+            {myTasksCount}
+          </Badge>
+        </Button>
+
+        <Button
+          variant={activeFilter === 'overdue' ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => setActiveFilter('overdue')}
+          className={cn("h-8", overdueCount > 0 && activeFilter !== 'overdue' && "border-destructive text-destructive hover:bg-destructive/10")}
+        >
+          <AlertTriangle className="h-3.5 w-3.5 mr-1" />
+          Overdue
+          <Badge 
+            variant={overdueCount > 0 ? "destructive" : "secondary"} 
+            className="ml-2 h-5 px-1.5"
+          >
+            {overdueCount}
+          </Badge>
+        </Button>
+      </div>
+
       <DndContext
         sensors={sensors}
         collisionDetection={closestCorners}
