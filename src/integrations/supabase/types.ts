@@ -57,6 +57,7 @@ export type Database = {
           title: string
           updated_at: string
           visibility: Database["public"]["Enums"]["task_visibility"]
+          workflow_id: string | null
           workspace_id: string
         }
         Insert: {
@@ -71,6 +72,7 @@ export type Database = {
           title: string
           updated_at?: string
           visibility?: Database["public"]["Enums"]["task_visibility"]
+          workflow_id?: string | null
           workspace_id: string
         }
         Update: {
@@ -85,11 +87,51 @@ export type Database = {
           title?: string
           updated_at?: string
           visibility?: Database["public"]["Enums"]["task_visibility"]
+          workflow_id?: string | null
           workspace_id?: string
         }
         Relationships: [
           {
+            foreignKeyName: "tasks_workflow_id_fkey"
+            columns: ["workflow_id"]
+            isOneToOne: false
+            referencedRelation: "workflows"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "tasks_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workflows: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workflows_workspace_id_fkey"
             columns: ["workspace_id"]
             isOneToOne: false
             referencedRelation: "workspaces"

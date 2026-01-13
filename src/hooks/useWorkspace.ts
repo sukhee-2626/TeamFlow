@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Workspace, WorkspaceMember, WorkspaceRole } from '@/types/database';
 import { useAuth } from './useAuth';
@@ -8,24 +8,40 @@ export function useWorkspaces() {
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  const fetchWorkspaces = async () => {
-    if (!user) return;
+  const fetchWorkspaces = useCallback(async () => {
+    if (!user) {
+      setWorkspaces([]);
+      setIsLoading(false);
+      return;
+    }
     
     setIsLoading(true);
-    const { data, error } = await supabase
+    
+    // Fetch workspaces with member count
+    const { data: wsData, error } = await supabase
       .from('workspaces')
       .select('*')
       .order('created_at', { ascending: false });
 
-    if (!error && data) {
-      setWorkspaces(data as Workspace[]);
+    if (!error && wsData) {
+      // Get member counts for each workspace
+      const workspacesWithCounts = await Promise.all(
+        wsData.map(async (ws) => {
+          const { count } = await supabase
+            .from('workspace_members')
+            .select('*', { count: 'exact', head: true })
+            .eq('workspace_id', ws.id);
+          return { ...ws, member_count: count || 0 } as Workspace;
+        })
+      );
+      setWorkspaces(workspacesWithCounts);
     }
     setIsLoading(false);
-  };
+  }, [user]);
 
   useEffect(() => {
     fetchWorkspaces();
-  }, [user]);
+  }, [fetchWorkspaces]);
 
   const createWorkspace = async (name: string, description: string) => {
     if (!user) return { error: 'Not authenticated' };
@@ -57,15 +73,16 @@ export function useWorkspaces() {
   const joinWorkspace = async (teamCode: string) => {
     if (!user) return { error: 'Not authenticated' };
 
-    // Find workspace by team code
-    const { data: workspace, error: findError } = await supabase
+    // Find workspace by team code (case insensitive)
+    const { data: allWorkspaces } = await supabase
       .from('workspaces')
-      .select('id')
-      .eq('team_code', teamCode.toLowerCase().trim())
-      .maybeSingle();
+      .select('id, team_code');
 
-    if (findError) return { error: findError.message };
-    if (!workspace) return { error: 'Invalid team code' };
+    const workspace = allWorkspaces?.find(
+      ws => ws.team_code.toLowerCase() === teamCode.toLowerCase().trim()
+    );
+
+    if (!workspace) return { error: 'Invalid team code. Please check and try again.' };
 
     // Check if already a member
     const { data: existing } = await supabase
@@ -102,7 +119,7 @@ export function useWorkspaceDetails(workspaceId: string) {
   const [userRole, setUserRole] = useState<WorkspaceRole | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const fetchDetails = async () => {
+  const fetchDetails = useCallback(async () => {
     if (!user || !workspaceId) return;
 
     setIsLoading(true);
@@ -121,17 +138,22 @@ export function useWorkspaceDetails(workspaceId: string) {
     // Fetch members with profiles
     const { data: membersData } = await supabase
       .from('workspace_members')
-      .select(`
-        *,
-        profile:profiles!workspace_members_user_id_fkey(name, email, avatar_url)
-      `)
+      .select('*')
       .eq('workspace_id', workspaceId);
 
     if (membersData) {
+      // Fetch profiles separately
+      const userIds = membersData.map(m => m.user_id);
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('user_id, name, email, avatar_url')
+        .in('user_id', userIds);
+
       const formattedMembers = membersData.map(m => ({
         ...m,
-        profile: Array.isArray(m.profile) ? m.profile[0] : m.profile
+        profile: profiles?.find(p => p.user_id === m.user_id) || null
       })) as WorkspaceMember[];
+      
       setMembers(formattedMembers);
       
       const currentMember = formattedMembers.find(m => m.user_id === user.id);
@@ -139,11 +161,11 @@ export function useWorkspaceDetails(workspaceId: string) {
     }
 
     setIsLoading(false);
-  };
+  }, [user, workspaceId]);
 
   useEffect(() => {
     fetchDetails();
-  }, [user, workspaceId]);
+  }, [fetchDetails]);
 
   const updateMemberRole = async (memberId: string, newRole: WorkspaceRole) => {
     const { error } = await supabase
@@ -169,6 +191,18 @@ export function useWorkspaceDetails(workspaceId: string) {
     return { error: error?.message };
   };
 
+  const updateWorkspace = async (name: string, description: string) => {
+    const { error } = await supabase
+      .from('workspaces')
+      .update({ name, description })
+      .eq('id', workspaceId);
+
+    if (!error) {
+      await fetchDetails();
+    }
+    return { error: error?.message };
+  };
+
   return { 
     workspace, 
     members, 
@@ -177,6 +211,7 @@ export function useWorkspaceDetails(workspaceId: string) {
     isManager: userRole === 'manager',
     refetch: fetchDetails,
     updateMemberRole,
-    removeMember
+    removeMember,
+    updateWorkspace
   };
 }

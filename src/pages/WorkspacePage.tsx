@@ -4,20 +4,23 @@ import { Button } from "@/components/ui/button";
 import { 
   LayoutGrid, 
   ArrowLeft, 
-  Copy, 
-  Check,
   Plus,
   Users,
   Settings,
   Loader2,
-  Shield
+  Crown,
+  LayoutDashboard,
+  Workflow as WorkflowIcon
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useWorkspaceDetails } from "@/hooks/useWorkspace";
+import { useWorkflows } from "@/hooks/useWorkflows";
 import { useTasks } from "@/hooks/useTasks";
 import { MembersList } from "@/components/workspace/MembersList";
-import { KanbanBoard } from "@/components/tasks/KanbanBoard";
-import { CreateTaskDialog } from "@/components/tasks/CreateTaskDialog";
+import { WorkspaceDashboard } from "@/components/workspace/WorkspaceDashboard";
+import { WorkflowBoard } from "@/components/workspace/WorkflowBoard";
+import { WorkspaceSettings } from "@/components/workspace/WorkspaceSettings";
+import { CreateWorkflowDialog } from "@/components/workspace/CreateWorkflowDialog";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -32,18 +35,14 @@ export default function WorkspacePage() {
     isLoading, 
     isManager,
     updateMemberRole,
-    removeMember
+    removeMember,
+    updateWorkspace
   } = useWorkspaceDetails(id || "");
-  const { 
-    tasks, 
-    isLoading: tasksLoading, 
-    createTask, 
-    updateTaskStatus,
-    deleteTask
-  } = useTasks(id || "");
+  const { workflows, createWorkflow, deleteWorkflow } = useWorkflows(id || "");
+  const { tasks, createTask, updateTaskStatus } = useTasks(id || "");
   
-  const [copied, setCopied] = useState(false);
-  const [showCreateTask, setShowCreateTask] = useState(false);
+  const [showCreateWorkflow, setShowCreateWorkflow] = useState(false);
+  const [activeWorkflow, setActiveWorkflow] = useState<string | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -53,14 +52,11 @@ export default function WorkspacePage() {
     }
   }, [user, authLoading, navigate]);
 
-  const copyTeamCode = () => {
-    if (workspace?.team_code) {
-      navigator.clipboard.writeText(workspace.team_code);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-      toast({ title: "Copied!", description: "Team code copied to clipboard" });
+  useEffect(() => {
+    if (workflows.length > 0 && !activeWorkflow) {
+      setActiveWorkflow(workflows[0].id);
     }
-  };
+  }, [workflows, activeWorkflow]);
 
   const handleUpdateRole = async (memberId: string, role: 'manager' | 'worker') => {
     const { error } = await updateMemberRole(memberId, role);
@@ -76,15 +72,18 @@ export default function WorkspacePage() {
     if (error) {
       toast({ title: "Error", description: error, variant: "destructive" });
     } else {
-      toast({ title: "Success", description: "Member removed from workspace" });
+      toast({ title: "Success", description: "Member removed" });
     }
   };
 
-  const handleDeleteTask = async (taskId: string) => {
-    const { error } = await deleteTask(taskId);
+  const handleCreateWorkflow = async (name: string) => {
+    const { error } = await createWorkflow(name);
     if (error) {
       toast({ title: "Error", description: error, variant: "destructive" });
+      return { error };
     }
+    toast({ title: "Success", description: "Workflow created" });
+    return {};
   };
 
   if (authLoading || isLoading) {
@@ -109,118 +108,123 @@ export default function WorkspacePage() {
     );
   }
 
-  const todoCount = tasks.filter(t => t.status === 'todo').length;
-  const ongoingCount = tasks.filter(t => t.status === 'ongoing').length;
-  const completedCount = tasks.filter(t => t.status === 'completed').length;
+  const currentWorkflow = workflows.find(w => w.id === activeWorkflow);
+  const workflowTasks = tasks.filter(t => t.workflow_id === activeWorkflow);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-muted/30">
       {/* Header */}
       <header className="sticky top-0 z-50 border-b border-border bg-background">
         <div className="container flex h-16 items-center justify-between">
           <div className="flex items-center gap-4">
-            <Button variant="ghost" size="sm" onClick={() => navigate("/dashboard")}>
+            <Button variant="ghost" size="icon" onClick={() => navigate("/dashboard")}>
               <ArrowLeft className="h-4 w-4" />
             </Button>
-            <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-primary">
-                <LayoutGrid className="h-4 w-4 text-primary-foreground" />
+            <div className="flex items-center gap-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-primary">
+                <LayoutGrid className="h-5 w-5 text-primary-foreground" />
               </div>
               <span className="text-xl font-bold text-foreground">{workspace.name}</span>
+              {isManager && (
+                <Badge className="bg-warning/20 text-warning border-warning/30">
+                  <Crown className="h-3 w-3 mr-1" />
+                  Owner
+                </Badge>
+              )}
             </div>
-            <Badge variant={isManager ? "default" : "secondary"} className="capitalize">
-              <Shield className="h-3 w-3 mr-1" />
-              {userRole}
-            </Badge>
           </div>
 
-          <div className="flex items-center gap-3">
-            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-muted rounded-lg">
-              <span className="text-xs text-muted-foreground">Team Code:</span>
-              <span className="font-mono text-sm font-medium">{workspace.team_code}</span>
-              <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={copyTeamCode}>
-                {copied ? <Check className="h-3.5 w-3.5 text-success" /> : <Copy className="h-3.5 w-3.5" />}
-              </Button>
-            </div>
+          <div className="flex items-center gap-2">
+            <span className="h-2 w-2 rounded-full bg-success"></span>
+            <span className="text-sm text-muted-foreground">{user.email}</span>
           </div>
         </div>
       </header>
 
       {/* Main content */}
       <main className="container py-6">
-        {/* Stats */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-          <div className="card-elevated p-4">
-            <p className="text-2xl font-bold text-foreground">{tasks.length}</p>
-            <p className="text-sm text-muted-foreground">Total Tasks</p>
-          </div>
-          <div className="card-elevated p-4">
-            <p className="text-2xl font-bold text-foreground">{todoCount}</p>
-            <p className="text-sm text-muted-foreground">To Do</p>
-          </div>
-          <div className="card-elevated p-4">
-            <p className="text-2xl font-bold text-warning">{ongoingCount}</p>
-            <p className="text-sm text-muted-foreground">Ongoing</p>
-          </div>
-          <div className="card-elevated p-4">
-            <p className="text-2xl font-bold text-success">{completedCount}</p>
-            <p className="text-sm text-muted-foreground">Completed</p>
-          </div>
-        </div>
-
-        <Tabs defaultValue="tasks" className="space-y-6">
-          <div className="flex items-center justify-between">
-            <TabsList>
-              <TabsTrigger value="tasks">Tasks</TabsTrigger>
-              <TabsTrigger value="members">
-                <Users className="h-4 w-4 mr-2" />
-                Members ({members.length})
-              </TabsTrigger>
-              {isManager && (
-                <TabsTrigger value="settings">
-                  <Settings className="h-4 w-4 mr-2" />
-                  Settings
-                </TabsTrigger>
-              )}
-            </TabsList>
-
+        <Tabs defaultValue="dashboard" className="space-y-6">
+          <TabsList>
+            <TabsTrigger value="dashboard">
+              <LayoutDashboard className="h-4 w-4 mr-2" />
+              Dashboard
+            </TabsTrigger>
+            <TabsTrigger value="workflows">
+              <WorkflowIcon className="h-4 w-4 mr-2" />
+              Workflows
+            </TabsTrigger>
+            <TabsTrigger value="members">
+              <Users className="h-4 w-4 mr-2" />
+              Members
+            </TabsTrigger>
             {isManager && (
-              <Button onClick={() => setShowCreateTask(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                New Task
-              </Button>
+              <TabsTrigger value="settings">
+                <Settings className="h-4 w-4 mr-2" />
+                Settings
+              </TabsTrigger>
             )}
-          </div>
+          </TabsList>
 
-          <TabsContent value="tasks" className="mt-6">
-            {tasksLoading ? (
-              <div className="flex justify-center py-12">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              </div>
-            ) : (
-              <KanbanBoard
-                tasks={tasks}
-                isManager={isManager}
-                currentUserId={user.id}
-                onUpdateStatus={updateTaskStatus}
-                onDeleteTask={handleDeleteTask}
-              />
-            )}
+          <TabsContent value="dashboard">
+            <WorkspaceDashboard tasks={tasks} currentUserId={user.id} />
           </TabsContent>
 
-          <TabsContent value="members" className="mt-6">
+          <TabsContent value="workflows">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex gap-2">
+                  {workflows.map(wf => (
+                    <Button
+                      key={wf.id}
+                      variant={activeWorkflow === wf.id ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setActiveWorkflow(wf.id)}
+                    >
+                      <WorkflowIcon className="h-4 w-4 mr-1" />
+                      {wf.name}
+                    </Button>
+                  ))}
+                </div>
+                {isManager && (
+                  <Button onClick={() => setShowCreateWorkflow(true)}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    New Workflow
+                  </Button>
+                )}
+              </div>
+
+              {currentWorkflow ? (
+                <WorkflowBoard
+                  workflow={currentWorkflow}
+                  tasks={workflowTasks}
+                  members={members}
+                  isManager={isManager}
+                  currentUserId={user.id}
+                  onUpdateStatus={updateTaskStatus}
+                  onCreateTask={createTask}
+                  onDeleteWorkflow={() => deleteWorkflow(currentWorkflow.id)}
+                />
+              ) : (
+                <div className="card-elevated p-12 text-center">
+                  <p className="text-muted-foreground mb-4">No workflows yet</p>
+                  {isManager && (
+                    <Button onClick={() => setShowCreateWorkflow(true)}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Create your first workflow
+                    </Button>
+                  )}
+                </div>
+              )}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="members">
             <div className="card-elevated p-6">
               <div className="flex items-center justify-between mb-6">
                 <div>
                   <h3 className="text-lg font-semibold text-foreground">Team Members</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Share the team code <span className="font-mono font-medium">{workspace.team_code}</span> to invite members
-                  </p>
+                  <p className="text-sm text-muted-foreground">Manage who has access to this workspace</p>
                 </div>
-                <Button variant="outline" onClick={copyTeamCode}>
-                  {copied ? <Check className="h-4 w-4 mr-2" /> : <Copy className="h-4 w-4 mr-2" />}
-                  Copy Code
-                </Button>
               </div>
               <MembersList
                 members={members}
@@ -233,36 +237,17 @@ export default function WorkspacePage() {
           </TabsContent>
 
           {isManager && (
-            <TabsContent value="settings" className="mt-6">
-              <div className="card-elevated p-6">
-                <h3 className="text-lg font-semibold text-foreground mb-4">Workspace Settings</h3>
-                <div className="space-y-4">
-                  <div>
-                    <label className="text-sm font-medium text-foreground">Workspace Name</label>
-                    <p className="text-muted-foreground">{workspace.name}</p>
-                  </div>
-                  {workspace.description && (
-                    <div>
-                      <label className="text-sm font-medium text-foreground">Description</label>
-                      <p className="text-muted-foreground">{workspace.description}</p>
-                    </div>
-                  )}
-                  <div>
-                    <label className="text-sm font-medium text-foreground">Team Code</label>
-                    <p className="font-mono text-foreground">{workspace.team_code}</p>
-                  </div>
-                </div>
-              </div>
+            <TabsContent value="settings">
+              <WorkspaceSettings workspace={workspace} onUpdate={updateWorkspace} />
             </TabsContent>
           )}
         </Tabs>
       </main>
 
-      <CreateTaskDialog
-        open={showCreateTask}
-        onOpenChange={setShowCreateTask}
-        members={members}
-        onSubmit={createTask}
+      <CreateWorkflowDialog
+        open={showCreateWorkflow}
+        onOpenChange={setShowCreateWorkflow}
+        onSubmit={handleCreateWorkflow}
       />
     </div>
   );
