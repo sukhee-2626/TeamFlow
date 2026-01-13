@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { Workflow, Task, TaskStatus, WorkspaceMember } from "@/types/database";
+import { Workflow, Task, TaskStatus, TaskVisibility, WorkspaceMember } from "@/types/database";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Plus, MoreVertical, Calendar } from "lucide-react";
+import { Plus, MoreVertical } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -23,12 +23,10 @@ import {
   SortableContext,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import { useSortable } from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
 import { useDroppable } from "@dnd-kit/core";
 import { cn } from "@/lib/utils";
-import { format, isPast } from "date-fns";
 import { QuickTaskDialog } from "./QuickTaskDialog";
+import { TaskCard } from "@/components/tasks/TaskCard";
 
 interface WorkflowBoardProps {
   workflow: Workflow;
@@ -45,6 +43,8 @@ interface WorkflowBoardProps {
     assignedUserId: string | null,
     workflowId: string
   ) => Promise<{ error?: string }>;
+  onUpdateTask: (taskId: string, updates: Partial<Task>) => Promise<{ error?: string }>;
+  onDeleteTask: (taskId: string) => Promise<{ error?: string }>;
   onDeleteWorkflow: () => void;
 }
 
@@ -54,75 +54,32 @@ const columns: { id: TaskStatus; title: string }[] = [
   { id: 'completed', title: 'Done' },
 ];
 
-function TaskItem({ task, isManager, currentUserId }: { task: Task; isManager: boolean; currentUserId: string }) {
-  const canDrag = isManager || task.assigned_user_id === currentUserId;
-  
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ 
-    id: task.id,
-    disabled: !canDrag
-  });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-  };
-
-  const deadline = new Date(task.deadline);
-  const isOverdue = isPast(deadline) && task.status !== 'completed';
-
-  return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      {...(canDrag ? { ...attributes, ...listeners } : {})}
-      className={cn(
-        "bg-background border border-border rounded-lg p-3 shadow-soft",
-        isDragging && "opacity-50",
-        canDrag && "cursor-grab active:cursor-grabbing"
-      )}
-    >
-      <p className="font-medium text-foreground text-sm mb-1">{task.title}</p>
-      {task.description && (
-        <p className="text-xs text-muted-foreground line-clamp-1 mb-2">{task.description}</p>
-      )}
-      <div className="flex items-center gap-1.5">
-        <Badge 
-          variant="outline" 
-          className={cn(
-            "text-xs",
-            isOverdue && task.status !== 'completed' && "border-destructive text-destructive",
-            task.status === 'completed' && "border-success text-success"
-          )}
-        >
-          <Calendar className="h-3 w-3 mr-1" />
-          {format(deadline, 'MMM d')}
-        </Badge>
-      </div>
-    </div>
-  );
-}
-
 function Column({ 
   status, 
   title, 
   tasks, 
+  members,
   isManager,
   currentUserId,
-  onAddTask
+  onAddTask,
+  onUpdateTask,
+  onDeleteTask
 }: { 
   status: TaskStatus; 
   title: string; 
   tasks: Task[];
+  members: WorkspaceMember[];
   isManager: boolean;
   currentUserId: string;
   onAddTask: () => void;
+  onUpdateTask: (taskId: string, updates: {
+    title: string;
+    description: string | null;
+    deadline: string;
+    visibility: TaskVisibility;
+    assigned_user_id: string | null;
+  }) => Promise<{ error?: string }>;
+  onDeleteTask: (taskId: string) => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: status });
   const count = tasks.length;
@@ -132,8 +89,8 @@ function Column({
       <div className={cn(
         "rounded-xl p-3 min-h-[400px] transition-colors",
         status === 'todo' && "bg-muted/50",
-        status === 'ongoing' && "bg-warning/5",
-        status === 'completed' && "bg-success/5",
+        status === 'ongoing' && "bg-amber-500/5",
+        status === 'completed' && "bg-green-500/5",
         isOver && "ring-2 ring-primary"
       )}>
         <div className="flex items-center justify-between mb-3 px-1">
@@ -158,11 +115,14 @@ function Column({
         <div ref={setNodeRef} className="space-y-2">
           <SortableContext items={tasks.map(t => t.id)} strategy={verticalListSortingStrategy}>
             {tasks.map((task) => (
-              <TaskItem 
+              <TaskCard 
                 key={task.id} 
                 task={task} 
                 isManager={isManager}
                 currentUserId={currentUserId}
+                members={members}
+                onUpdate={onUpdateTask}
+                onDelete={onDeleteTask}
               />
             ))}
           </SortableContext>
@@ -192,6 +152,8 @@ export function WorkflowBoard({
   currentUserId, 
   onUpdateStatus,
   onCreateTask,
+  onUpdateTask,
+  onDeleteTask,
   onDeleteWorkflow
 }: WorkflowBoardProps) {
   const [activeTask, setActiveTask] = useState<Task | null>(null);
@@ -250,6 +212,20 @@ export function WorkflowBoard({
     setShowQuickTask(true);
   };
 
+  const handleUpdateTask = async (taskId: string, updates: {
+    title: string;
+    description: string | null;
+    deadline: string;
+    visibility: TaskVisibility;
+    assigned_user_id: string | null;
+  }) => {
+    return onUpdateTask(taskId, updates);
+  };
+
+  const handleDeleteTask = async (taskId: string) => {
+    await onDeleteTask(taskId);
+  };
+
   return (
     <>
       <DndContext
@@ -265,16 +241,19 @@ export function WorkflowBoard({
               status={column.id}
               title={column.title}
               tasks={getTasksByStatus(column.id)}
+              members={members}
               isManager={isManager}
               currentUserId={currentUserId}
               onAddTask={() => handleAddTask(column.id)}
+              onUpdateTask={handleUpdateTask}
+              onDeleteTask={handleDeleteTask}
             />
           ))}
         </div>
 
         <DragOverlay>
           {activeTask && (
-            <div className="bg-background border border-border rounded-lg p-3 shadow-elevated">
+            <div className="bg-background border border-border rounded-lg p-3 shadow-lg">
               <p className="font-medium text-foreground text-sm">{activeTask.title}</p>
             </div>
           )}
