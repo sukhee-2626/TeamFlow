@@ -19,6 +19,7 @@ export type Database = {
           content: string
           created_at: string
           id: string
+          recipient_id: string | null
           sender_id: string
           updated_at: string
           workspace_id: string
@@ -27,6 +28,7 @@ export type Database = {
           content: string
           created_at?: string
           id?: string
+          recipient_id?: string | null
           sender_id: string
           updated_at?: string
           workspace_id: string
@@ -35,6 +37,7 @@ export type Database = {
           content?: string
           created_at?: string
           id?: string
+          recipient_id?: string | null
           sender_id?: string
           updated_at?: string
           workspace_id?: string

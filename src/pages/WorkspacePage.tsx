@@ -136,7 +136,7 @@ export default function WorkspacePage() {
           </div>
 
           <div className="flex items-center gap-3">
-            <WorkspaceChat workspaceId={id || ""} workspaceName={workspace.name} />
+            <WorkspaceChat workspaceId={id || ""} workspaceName={workspace.name} members={members} />
             <div className="flex items-center gap-2">
               <span className="h-2 w-2 rounded-full bg-green-500"></span>
               <span className="text-sm text-muted-foreground">{user.email}</span>

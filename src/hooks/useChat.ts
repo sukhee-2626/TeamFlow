@@ -6,6 +6,7 @@ export interface Message {
   id: string;
   workspace_id: string;
   sender_id: string;
+  recipient_id: string | null;
   content: string;
   created_at: string;
   updated_at: string;
@@ -16,7 +17,7 @@ export interface Message {
   };
 }
 
-export function useChat(workspaceId: string) {
+export function useChat(workspaceId: string, recipientId?: string | null) {
   const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -26,11 +27,22 @@ export function useChat(workspaceId: string) {
 
     setIsLoading(true);
     
-    const { data, error } = await supabase
+    let query = supabase
       .from('messages')
       .select('*')
       .eq('workspace_id', workspaceId)
       .order('created_at', { ascending: true });
+
+    // Filter by recipient for DMs or null for group chat
+    if (recipientId) {
+      // DM: get messages between current user and recipient
+      query = query.or(`and(sender_id.eq.${user.id},recipient_id.eq.${recipientId}),and(sender_id.eq.${recipientId},recipient_id.eq.${user.id})`);
+    } else {
+      // Group chat: get messages with no recipient
+      query = query.is('recipient_id', null);
+    }
+
+    const { data, error } = await query;
 
     if (!error && data) {
       // Fetch sender profiles
@@ -53,14 +65,14 @@ export function useChat(workspaceId: string) {
       setMessages(formattedMessages);
     }
     setIsLoading(false);
-  }, [user, workspaceId]);
+  }, [user, workspaceId, recipientId]);
 
   useEffect(() => {
     fetchMessages();
 
     // Set up realtime subscription
     const channel = supabase
-      .channel(`messages-${workspaceId}`)
+      .channel(`messages-${workspaceId}-${recipientId || 'group'}`)
       .on(
         'postgres_changes',
         {
@@ -78,9 +90,9 @@ export function useChat(workspaceId: string) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [fetchMessages, workspaceId]);
+  }, [fetchMessages, workspaceId, recipientId]);
 
-  const sendMessage = async (content: string) => {
+  const sendMessage = async (content: string, toRecipientId?: string | null) => {
     if (!user || !content.trim()) return { error: 'Invalid message' };
 
     const { data, error } = await supabase
@@ -88,6 +100,7 @@ export function useChat(workspaceId: string) {
       .insert({
         workspace_id: workspaceId,
         sender_id: user.id,
+        recipient_id: toRecipientId || null,
         content: content.trim()
       })
       .select()
