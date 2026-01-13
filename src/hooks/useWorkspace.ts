@@ -73,15 +73,13 @@ export function useWorkspaces() {
   const joinWorkspace = async (teamCode: string) => {
     if (!user) return { error: 'Not authenticated' };
 
-    // Find workspace by team code (case insensitive)
-    const { data: allWorkspaces } = await supabase
-      .from('workspaces')
-      .select('id, team_code');
+    // Use RPC function to find workspace by team code (bypasses RLS)
+    const { data: workspaceData, error: findError } = await supabase
+      .rpc('find_workspace_by_code', { code: teamCode.trim() });
 
-    const workspace = allWorkspaces?.find(
-      ws => ws.team_code.toLowerCase() === teamCode.toLowerCase().trim()
-    );
-
+    if (findError) return { error: findError.message };
+    
+    const workspace = workspaceData?.[0];
     if (!workspace) return { error: 'Invalid team code. Please check and try again.' };
 
     // Check if already a member
