@@ -206,6 +206,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_view_workspace: {
+        Args: { workspace_team_code: string; workspace_uuid: string }
+        Returns: boolean
+      }
+      find_workspace_by_code: {
+        Args: { code: string }
+        Returns: {
+          id: string
+        }[]
+      }
       get_workspace_role: {
         Args: { user_uuid: string; workspace_uuid: string }
         Returns: Database["public"]["Enums"]["workspace_role"]
