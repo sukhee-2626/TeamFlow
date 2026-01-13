@@ -145,13 +145,13 @@ export function QuickTaskDialog({
 
               <div className="space-y-2">
                 <Label>Assign To</Label>
-                <Select value={assignedUserId} onValueChange={setAssignedUserId}>
+              <Select value={assignedUserId || "unassigned"} onValueChange={(v) => setAssignedUserId(v === "unassigned" ? "" : v)}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Unassigned</SelectItem>
-                    {members.map((member) => (
+                    <SelectItem value="unassigned">Unassigned</SelectItem>
+                    {members.filter(m => m.user_id).map((member) => (
                       <SelectItem key={member.user_id} value={member.user_id}>
                         {member.profile?.name || member.profile?.email || 'Unknown'}
                       </SelectItem>
