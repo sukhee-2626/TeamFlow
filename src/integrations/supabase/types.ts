@@ -44,15 +44,143 @@ export type Database = {
         }
         Relationships: []
       }
+      tasks: {
+        Row: {
+          assigned_user_id: string | null
+          created_at: string
+          created_by: string
+          deadline: string
+          description: string | null
+          id: string
+          position: number
+          status: Database["public"]["Enums"]["task_status"]
+          title: string
+          updated_at: string
+          visibility: Database["public"]["Enums"]["task_visibility"]
+          workspace_id: string
+        }
+        Insert: {
+          assigned_user_id?: string | null
+          created_at?: string
+          created_by: string
+          deadline: string
+          description?: string | null
+          id?: string
+          position?: number
+          status?: Database["public"]["Enums"]["task_status"]
+          title: string
+          updated_at?: string
+          visibility?: Database["public"]["Enums"]["task_visibility"]
+          workspace_id: string
+        }
+        Update: {
+          assigned_user_id?: string | null
+          created_at?: string
+          created_by?: string
+          deadline?: string
+          description?: string | null
+          id?: string
+          position?: number
+          status?: Database["public"]["Enums"]["task_status"]
+          title?: string
+          updated_at?: string
+          visibility?: Database["public"]["Enums"]["task_visibility"]
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tasks_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workspace_members: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["workspace_role"]
+          user_id: string
+          workspace_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["workspace_role"]
+          user_id: string
+          workspace_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["workspace_role"]
+          user_id?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workspace_members_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workspaces: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          owner_id: string
+          team_code: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          owner_id: string
+          team_code?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          owner_id?: string
+          team_code?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_workspace_role: {
+        Args: { user_uuid: string; workspace_uuid: string }
+        Returns: Database["public"]["Enums"]["workspace_role"]
+      }
+      is_workspace_manager: {
+        Args: { user_uuid: string; workspace_uuid: string }
+        Returns: boolean
+      }
+      is_workspace_member: {
+        Args: { user_uuid: string; workspace_uuid: string }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      task_status: "todo" | "ongoing" | "completed"
+      task_visibility: "public" | "private"
+      workspace_role: "manager" | "worker"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -179,6 +307,10 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      task_status: ["todo", "ongoing", "completed"],
+      task_visibility: ["public", "private"],
+      workspace_role: ["manager", "worker"],
+    },
   },
 } as const

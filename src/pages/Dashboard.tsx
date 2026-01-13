@@ -1,5 +1,4 @@
-import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { 
@@ -8,47 +7,33 @@ import {
   LogOut, 
   Folder,
   Users,
-  CheckCircle2,
-  Clock,
-  Loader2
+  Loader2,
+  UserPlus
 } from "lucide-react";
-import { User } from "@supabase/supabase-js";
+import { useAuth } from "@/hooks/useAuth";
+import { useWorkspaces } from "@/hooks/useWorkspace";
+import { WorkspaceCard } from "@/components/workspace/WorkspaceCard";
+import { CreateWorkspaceDialog } from "@/components/workspace/CreateWorkspaceDialog";
+import { JoinWorkspaceDialog } from "@/components/workspace/JoinWorkspaceDialog";
+import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 
 export default function Dashboard() {
-  const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const { user, isLoading: authLoading, signOut } = useAuth();
+  const { workspaces, isLoading: workspacesLoading, createWorkspace, joinWorkspace } = useWorkspaces();
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [showJoinDialog, setShowJoinDialog] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
   useEffect(() => {
-    // Set up auth state listener FIRST
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setUser(session?.user ?? null);
-        setIsLoading(false);
-        
-        if (!session?.user) {
-          navigate("/auth");
-        }
-      }
-    );
-
-    // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      setIsLoading(false);
-      
-      if (!session?.user) {
-        navigate("/auth");
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, [navigate]);
+    if (!authLoading && !user) {
+      navigate("/auth");
+    }
+  }, [user, authLoading, navigate]);
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
+    await signOut();
     toast({
       title: "Signed out",
       description: "You have been signed out successfully.",
@@ -56,13 +41,15 @@ export default function Dashboard() {
     navigate("/");
   };
 
-  if (isLoading) {
+  if (authLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
+
+  if (!user) return null;
 
   const userName = user?.user_metadata?.name || user?.email?.split("@")[0] || "User";
 
@@ -79,7 +66,7 @@ export default function Dashboard() {
           </div>
 
           <div className="flex items-center gap-4">
-            <span className="text-sm text-muted-foreground">
+            <span className="text-sm text-muted-foreground hidden sm:block">
               Welcome, <span className="text-foreground font-medium">{userName}</span>
             </span>
             <Button variant="ghost" size="sm" onClick={handleSignOut}>
@@ -98,19 +85,19 @@ export default function Dashboard() {
             Welcome back, {userName.split(" ")[0]}!
           </h1>
           <p className="text-muted-foreground">
-            Here's an overview of your workspaces and tasks.
+            Manage your workspaces and collaborate with your team.
           </p>
         </div>
 
         {/* Stats cards */}
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-8">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 mb-8">
           <div className="card-elevated p-6">
             <div className="flex items-center gap-4">
               <div className="h-12 w-12 rounded-xl bg-accent flex items-center justify-center">
                 <Folder className="h-6 w-6 text-accent-foreground" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-foreground">0</p>
+                <p className="text-2xl font-bold text-foreground">{workspaces.length}</p>
                 <p className="text-sm text-muted-foreground">Workspaces</p>
               </div>
             </div>
@@ -122,32 +109,20 @@ export default function Dashboard() {
                 <Users className="h-6 w-6 text-accent-foreground" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-foreground">1</p>
+                <p className="text-2xl font-bold text-foreground">-</p>
                 <p className="text-sm text-muted-foreground">Team members</p>
               </div>
             </div>
           </div>
 
-          <div className="card-elevated p-6">
+          <div className="card-elevated p-6 sm:col-span-2 lg:col-span-1">
             <div className="flex items-center gap-4">
               <div className="h-12 w-12 rounded-xl bg-success/10 flex items-center justify-center">
-                <CheckCircle2 className="h-6 w-6 text-success" />
+                <UserPlus className="h-6 w-6 text-success" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-foreground">0</p>
-                <p className="text-sm text-muted-foreground">Completed</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="card-elevated p-6">
-            <div className="flex items-center gap-4">
-              <div className="h-12 w-12 rounded-xl bg-warning/10 flex items-center justify-center">
-                <Clock className="h-6 w-6 text-warning" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-foreground">0</p>
-                <p className="text-sm text-muted-foreground">In progress</p>
+                <p className="text-sm font-medium text-foreground">Join a workspace</p>
+                <p className="text-xs text-muted-foreground">Use a team code to join</p>
               </div>
             </div>
           </div>
@@ -157,40 +132,65 @@ export default function Dashboard() {
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-semibold text-foreground">Your Workspaces</h2>
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              New Workspace
-            </Button>
-          </div>
-
-          {/* Empty state */}
-          <div className="card-elevated p-12 text-center">
-            <div className="mx-auto mb-4 h-16 w-16 rounded-2xl bg-muted flex items-center justify-center">
-              <Folder className="h-8 w-8 text-muted-foreground" />
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setShowJoinDialog(true)}>
+                <UserPlus className="h-4 w-4 mr-2" />
+                Join
+              </Button>
+              <Button onClick={() => setShowCreateDialog(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Create
+              </Button>
             </div>
-            <h3 className="text-lg font-semibold text-foreground mb-2">
-              No workspaces yet
-            </h3>
-            <p className="text-muted-foreground mb-6 max-w-sm mx-auto">
-              Create your first workspace to start organizing your projects and collaborating with your team.
-            </p>
-            <Button variant="hero">
-              <Plus className="h-4 w-4 mr-2" />
-              Create your first workspace
-            </Button>
           </div>
-        </div>
 
-        {/* Recent activity placeholder */}
-        <div>
-          <h2 className="text-xl font-semibold text-foreground mb-4">Recent Activity</h2>
-          <div className="card-elevated p-8 text-center">
-            <p className="text-muted-foreground">
-              Your recent activity will appear here once you start working on tasks.
-            </p>
-          </div>
+          {workspacesLoading ? (
+            <div className="flex justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : workspaces.length > 0 ? (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {workspaces.map((workspace) => (
+                <WorkspaceCard key={workspace.id} workspace={workspace} />
+              ))}
+            </div>
+          ) : (
+            <div className="card-elevated p-12 text-center">
+              <div className="mx-auto mb-4 h-16 w-16 rounded-2xl bg-muted flex items-center justify-center">
+                <Folder className="h-8 w-8 text-muted-foreground" />
+              </div>
+              <h3 className="text-lg font-semibold text-foreground mb-2">
+                No workspaces yet
+              </h3>
+              <p className="text-muted-foreground mb-6 max-w-sm mx-auto">
+                Create a new workspace or join an existing one using a team code.
+              </p>
+              <div className="flex gap-3 justify-center">
+                <Button variant="outline" onClick={() => setShowJoinDialog(true)}>
+                  <UserPlus className="h-4 w-4 mr-2" />
+                  Join with code
+                </Button>
+                <Button variant="hero" onClick={() => setShowCreateDialog(true)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create workspace
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       </main>
+
+      <CreateWorkspaceDialog
+        open={showCreateDialog}
+        onOpenChange={setShowCreateDialog}
+        onSubmit={createWorkspace}
+      />
+
+      <JoinWorkspaceDialog
+        open={showJoinDialog}
+        onOpenChange={setShowJoinDialog}
+        onSubmit={joinWorkspace}
+      />
     </div>
   );
 }
