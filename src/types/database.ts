@@ -10,6 +10,7 @@ export interface Workspace {
   owner_id: string;
   created_at: string;
   updated_at: string;
+  member_count?: number;
 }
 
 export interface WorkspaceMember {
@@ -25,9 +26,18 @@ export interface WorkspaceMember {
   };
 }
 
+export interface Workflow {
+  id: string;
+  workspace_id: string;
+  name: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Task {
   id: string;
   workspace_id: string;
+  workflow_id: string | null;
   title: string;
   description: string | null;
   status: TaskStatus;

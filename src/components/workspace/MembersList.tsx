@@ -8,7 +8,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { MoreHorizontal, Shield, User, UserMinus } from "lucide-react";
+import { MoreHorizontal, Shield, User, UserMinus, Crown } from "lucide-react";
 
 interface MembersListProps {
   members: WorkspaceMember[];
@@ -35,44 +35,52 @@ export function MembersList({
     return 'U';
   };
 
+  const sortedMembers = [...members].sort((a, b) => {
+    if (a.role === 'manager' && b.role !== 'manager') return -1;
+    if (a.role !== 'manager' && b.role === 'manager') return 1;
+    return 0;
+  });
+
   return (
-    <div className="space-y-3">
-      {members.map((member) => (
+    <div className="space-y-2">
+      {sortedMembers.map((member) => (
         <div
           key={member.id}
-          className="flex items-center justify-between p-3 rounded-lg bg-muted/50"
+          className="flex items-center justify-between p-4 rounded-lg border border-border bg-background"
         >
           <div className="flex items-center gap-3">
             <Avatar className="h-10 w-10">
               <AvatarImage src={member.profile?.avatar_url || undefined} />
-              <AvatarFallback>
+              <AvatarFallback className="bg-accent text-accent-foreground">
                 {getInitials(member.profile?.name || null, member.profile?.email || null)}
               </AvatarFallback>
             </Avatar>
             <div>
-              <p className="font-medium text-foreground">
-                {member.profile?.name || member.profile?.email || 'Unknown User'}
+              <div className="flex items-center gap-2">
+                <p className="font-medium text-foreground">
+                  {member.profile?.name || member.profile?.email || 'Unknown User'}
+                </p>
                 {member.user_id === currentUserId && (
-                  <span className="text-muted-foreground ml-2">(You)</span>
+                  <span className="text-xs text-muted-foreground">(You)</span>
                 )}
-              </p>
+              </div>
               {member.profile?.email && member.profile?.name && (
                 <p className="text-sm text-muted-foreground">{member.profile.email}</p>
               )}
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             <Badge 
               variant={member.role === 'manager' ? 'default' : 'secondary'}
               className="capitalize"
             >
               {member.role === 'manager' ? (
-                <Shield className="h-3 w-3 mr-1" />
+                <Crown className="h-3 w-3 mr-1" />
               ) : (
                 <User className="h-3 w-3 mr-1" />
               )}
-              {member.role}
+              {member.role === 'manager' ? 'Owner' : 'Member'}
             </Badge>
 
             {isManager && member.user_id !== currentUserId && (
@@ -87,14 +95,14 @@ export function MembersList({
                     onClick={() => onUpdateRole(member.id, member.role === 'manager' ? 'worker' : 'manager')}
                   >
                     <Shield className="h-4 w-4 mr-2" />
-                    Make {member.role === 'manager' ? 'Worker' : 'Manager'}
+                    Make {member.role === 'manager' ? 'Member' : 'Owner'}
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() => onRemoveMember(member.id)}
                     className="text-destructive"
                   >
                     <UserMinus className="h-4 w-4 mr-2" />
-                    Remove from workspace
+                    Remove
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
