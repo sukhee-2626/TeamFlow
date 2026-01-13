@@ -21,6 +21,7 @@ import { WorkspaceDashboard } from "@/components/workspace/WorkspaceDashboard";
 import { WorkflowBoard } from "@/components/workspace/WorkflowBoard";
 import { WorkspaceSettings } from "@/components/workspace/WorkspaceSettings";
 import { CreateWorkflowDialog } from "@/components/workspace/CreateWorkflowDialog";
+import { WorkspaceChat } from "@/components/workspace/WorkspaceChat";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -134,9 +135,12 @@ export default function WorkspacePage() {
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <span className="h-2 w-2 rounded-full bg-success"></span>
-            <span className="text-sm text-muted-foreground">{user.email}</span>
+          <div className="flex items-center gap-3">
+            <WorkspaceChat workspaceId={id || ""} workspaceName={workspace.name} />
+            <div className="flex items-center gap-2">
+              <span className="h-2 w-2 rounded-full bg-green-500"></span>
+              <span className="text-sm text-muted-foreground">{user.email}</span>
+            </div>
           </div>
         </div>
       </header>
