@@ -41,7 +41,7 @@ export function Features() {
 
       <div className="container relative z-10">
         {/* Section header */}
-        <div className="mx-auto max-w-2xl text-center mb-16 animate-slide-up">
+        <div className="mx-auto max-w-2xl text-center mb-16">
           <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl mb-4">
             Everything you need to manage projects
           </h2>
@@ -51,16 +51,16 @@ export function Features() {
         </div>
 
         {/* Features grid */}
-        <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3 stagger-children">
+        <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
           {features.map((feature) => (
             <div
               key={feature.title}
-              className="card-glass p-6 hover-lift group"
+              className="card-glass p-6 group"
             >
-              <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-primary/10 text-primary group-hover:bg-gradient-primary group-hover:text-primary-foreground transition-all duration-300">
+              <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-primary/10 text-primary group-hover:bg-gradient-primary group-hover:text-primary-foreground">
                 <feature.icon className="h-6 w-6" />
               </div>
-              <h3 className="mb-2 text-lg font-semibold text-foreground group-hover:text-primary transition-colors">
+              <h3 className="mb-2 text-lg font-semibold text-foreground group-hover:text-primary">
                 {feature.title}
               </h3>
               <p className="text-muted-foreground">

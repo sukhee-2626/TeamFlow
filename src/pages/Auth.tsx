@@ -62,7 +62,7 @@ export default function Auth() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-hero relative overflow-hidden flex flex-col page-transition">
+    <div className="min-h-screen bg-gradient-hero relative overflow-hidden flex flex-col">
       {/* Floating orbs */}
       <div className="floating-orb floating-orb-1"></div>
       <div className="floating-orb floating-orb-2"></div>
@@ -72,7 +72,7 @@ export default function Auth() {
       <div className="container py-6 relative z-10">
         <Link 
           to="/" 
-          className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors animate-fade-in"
+          className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="h-4 w-4" />
           Back to home
@@ -82,10 +82,10 @@ export default function Auth() {
       {/* Auth card */}
       <div className="flex-1 flex items-center justify-center p-4 relative z-10">
         <div className="w-full max-w-md">
-          <div className="card-glass p-8 animate-scale-in">
+          <div className="card-glass p-8">
             {/* Logo */}
-            <div className="flex items-center justify-center gap-2 mb-8 animate-bounce-in">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-primary animate-pulse-glow">
+            <div className="flex items-center justify-center gap-2 mb-8">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-primary">
                 <LayoutGrid className="h-5 w-5 text-primary-foreground" />
               </div>
               <span className="text-2xl font-bold text-foreground">FlowDesk</span>
