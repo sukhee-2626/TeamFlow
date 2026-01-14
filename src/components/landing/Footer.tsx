@@ -1,4 +1,4 @@
-import { LayoutGrid } from "lucide-react";
+import { LayoutGrid } from "lucide-react/dist/esm/icons/layout-grid";
 import { Link } from "react-router-dom";
 
 export function Footer() {

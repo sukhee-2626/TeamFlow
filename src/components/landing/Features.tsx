@@ -1,11 +1,9 @@
-import { 
-  LayoutGrid, 
-  Users, 
-  Workflow, 
-  Bell,
-  Zap,
-  Shield
-} from "lucide-react";
+import { LayoutGrid } from "lucide-react/dist/esm/icons/layout-grid";
+import { Users } from "lucide-react/dist/esm/icons/users";
+import { Workflow } from "lucide-react/dist/esm/icons/workflow";
+import { Bell } from "lucide-react/dist/esm/icons/bell";
+import { Zap } from "lucide-react/dist/esm/icons/zap";
+import { Shield } from "lucide-react/dist/esm/icons/shield";
 
 const features = [
   {

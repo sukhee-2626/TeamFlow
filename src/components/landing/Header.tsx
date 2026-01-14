@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import { LayoutGrid } from "lucide-react";
+import { LayoutGrid } from "lucide-react/dist/esm/icons/layout-grid";
 
 export function Header() {
   return (

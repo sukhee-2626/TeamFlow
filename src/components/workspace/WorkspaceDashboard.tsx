@@ -1,12 +1,9 @@
 import { Task } from "@/types/database";
-import { 
-  LayoutDashboard, 
-  Clock, 
-  CheckCircle2,
-  AlertTriangle,
-  ListTodo
-} from "lucide-react";
-import { isPast, isToday, isTomorrow, format } from "date-fns";
+import { Clock } from "lucide-react/dist/esm/icons/clock";
+import { CheckCircle2 } from "lucide-react/dist/esm/icons/check-circle-2";
+import { AlertTriangle } from "lucide-react/dist/esm/icons/alert-triangle";
+import { ListTodo } from "lucide-react/dist/esm/icons/list-todo";
+import { isPast, format } from "date-fns";
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend } from "recharts";
 
 interface WorkspaceDashboardProps {
