@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { LayoutGrid } from "lucide-react";
+import { prefetchAuth } from "@/lib/prefetch";
 
 export function Header() {
   return (
@@ -39,10 +40,10 @@ export function Header() {
         {/* Auth buttons */}
         <div className="flex items-center gap-3 animate-fade-in" style={{ animationDelay: "0.2s" }}>
           <Button variant="ghost" size="sm" asChild className="hover-lift">
-            <Link to="/auth">Sign in</Link>
+            <Link to="/auth" onMouseEnter={prefetchAuth}>Sign in</Link>
           </Button>
           <Button size="sm" asChild className="hover-lift">
-            <Link to="/auth">Get started</Link>
+            <Link to="/auth" onMouseEnter={prefetchAuth}>Get started</Link>
           </Button>
         </div>
       </div>

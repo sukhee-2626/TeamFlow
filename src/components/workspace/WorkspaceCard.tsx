@@ -2,6 +2,7 @@ import { Workspace } from "@/types/database";
 import { Folder, Users, Calendar } from "lucide-react";
 import { Link } from "react-router-dom";
 import { format } from "date-fns";
+import { prefetchWorkspacePage } from "@/lib/prefetch";
 
 interface WorkspaceCardProps {
   workspace: Workspace;
@@ -9,7 +10,7 @@ interface WorkspaceCardProps {
 
 export function WorkspaceCard({ workspace }: WorkspaceCardProps) {
   return (
-    <Link to={`/workspace/${workspace.id}`} className="block group">
+    <Link to={`/workspace/${workspace.id}`} onMouseEnter={prefetchWorkspacePage} className="block group">
       <div className="card-glass p-6 h-full hover-lift transition-all duration-300 group-hover:border-primary/30">
         <div className="mb-4">
           <div className="h-12 w-12 rounded-xl bg-gradient-primary/10 flex items-center justify-center mb-4 transition-transform duration-300 group-hover:scale-110">

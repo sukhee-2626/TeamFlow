@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { ArrowRight, CheckCircle2, Sparkles } from "lucide-react";
 import { Link } from "react-router-dom";
+import { prefetchAuth } from "@/lib/prefetch";
 
 export function Hero() {
   return (
@@ -35,13 +36,13 @@ export function Hero() {
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12 animate-slide-up" style={{ animationDelay: "0.2s" }}>
             <Button variant="hero" size="xl" asChild className="hover-lift">
-              <Link to="/auth">
+              <Link to="/auth" onMouseEnter={prefetchAuth}>
                 Get started free
                 <ArrowRight className="h-5 w-5" />
               </Link>
             </Button>
             <Button variant="outline" size="xl" asChild className="hover-lift">
-              <Link to="/auth">
+              <Link to="/auth" onMouseEnter={prefetchAuth}>
                 Sign in
               </Link>
             </Button>
