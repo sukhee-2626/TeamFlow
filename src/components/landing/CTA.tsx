@@ -1,7 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
-import { prefetchAuth } from "@/lib/prefetch";
 
 export function CTA() {
   return (
@@ -19,7 +18,7 @@ export function CTA() {
             Join teams that use FlowDesk to ship faster and collaborate better.
           </p>
           <Button variant="hero" size="xl" asChild className="hover-lift animate-pulse-glow">
-            <Link to="/auth" onMouseEnter={prefetchAuth}>
+            <Link to="/auth">
               Start for free
               <ArrowRight className="h-5 w-5" />
             </Link>

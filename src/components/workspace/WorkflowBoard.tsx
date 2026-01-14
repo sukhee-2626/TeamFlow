@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo } from "react";
 import { Workflow, Task, TaskStatus, TaskVisibility, WorkspaceMember } from "@/types/database";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -8,6 +8,8 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
+  DropdownMenuCheckboxItem,
 } from "@/components/ui/dropdown-menu";
 import {
   DndContext,
@@ -24,14 +26,10 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { useDroppable } from "@dnd-kit/core";
-import { useVirtualizer } from "@tanstack/react-virtual";
 import { cn } from "@/lib/utils";
 import { QuickTaskDialog } from "./QuickTaskDialog";
 import { TaskCard } from "@/components/tasks/TaskCard";
 import { isPast } from "date-fns";
-
-// Threshold for enabling virtualization
-const VIRTUALIZATION_THRESHOLD = 10;
 
 interface WorkflowBoardProps {
   workflow: Workflow;
@@ -92,23 +90,11 @@ function Column({
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: status });
   const count = tasks.length;
-  const parentRef = useRef<HTMLDivElement>(null);
-  
-  // Only virtualize when we have many tasks
-  const shouldVirtualize = count > VIRTUALIZATION_THRESHOLD;
-
-  const virtualizer = useVirtualizer({
-    count: tasks.length,
-    getScrollElement: () => parentRef.current,
-    estimateSize: () => 140, // Estimated task card height
-    overscan: 3,
-    enabled: shouldVirtualize,
-  });
 
   return (
     <div className="flex-1 min-w-[300px]">
       <div className={cn(
-        "rounded-xl p-3 min-h-[400px] transition-colors flex flex-col",
+        "rounded-xl p-3 min-h-[400px] transition-colors",
         status === 'todo' && "bg-muted/50",
         status === 'ongoing' && "bg-amber-500/5",
         status === 'completed' && "bg-green-500/5",
@@ -133,76 +119,28 @@ function Column({
           </DropdownMenu>
         </div>
 
-        <div 
-          ref={parentRef}
-          className={cn(
-            "flex-1 overflow-y-auto contain-strict",
-            shouldVirtualize && "max-h-[60vh]"
-          )}
-        >
-          <div ref={setNodeRef}>
-            <SortableContext items={tasks.map(t => t.id)} strategy={verticalListSortingStrategy}>
-              {shouldVirtualize ? (
-                <div
-                  style={{
-                    height: `${virtualizer.getTotalSize()}px`,
-                    width: '100%',
-                    position: 'relative',
-                  }}
-                >
-                  {virtualizer.getVirtualItems().map((virtualRow) => {
-                    const task = tasks[virtualRow.index];
-                    return (
-                      <div
-                        key={task.id}
-                        style={{
-                          position: 'absolute',
-                          top: 0,
-                          left: 0,
-                          width: '100%',
-                          height: `${virtualRow.size}px`,
-                          transform: `translateY(${virtualRow.start}px)`,
-                        }}
-                        className="pb-3"
-                      >
-                        <TaskCard 
-                          task={task} 
-                          isManager={isManager}
-                          currentUserId={currentUserId}
-                          members={members}
-                          onUpdate={onUpdateTask}
-                          onDelete={onDeleteTask}
-                          onStatusChange={onStatusChange}
-                        />
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {tasks.map((task) => (
-                    <TaskCard 
-                      key={task.id} 
-                      task={task} 
-                      isManager={isManager}
-                      currentUserId={currentUserId}
-                      members={members}
-                      onUpdate={onUpdateTask}
-                      onDelete={onDeleteTask}
-                      onStatusChange={onStatusChange}
-                    />
-                  ))}
-                </div>
-              )}
-            </SortableContext>
-          </div>
+        <div ref={setNodeRef} className="space-y-3">
+          <SortableContext items={tasks.map(t => t.id)} strategy={verticalListSortingStrategy}>
+            {tasks.map((task) => (
+              <TaskCard 
+                key={task.id} 
+                task={task} 
+                isManager={isManager}
+                currentUserId={currentUserId}
+                members={members}
+                onUpdate={onUpdateTask}
+                onDelete={onDeleteTask}
+                onStatusChange={onStatusChange}
+              />
+            ))}
+          </SortableContext>
         </div>
 
         {isManager && (
           <Button
             variant="ghost"
             size="sm"
-            className="w-full mt-2 text-muted-foreground flex-shrink-0"
+            className="w-full mt-2 text-muted-foreground"
             onClick={onAddTask}
           >
             <Plus className="h-4 w-4 mr-1" />

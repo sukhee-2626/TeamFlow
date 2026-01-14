@@ -138,9 +138,9 @@
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
 
-  /* Fast scrolling - no smooth scroll for speed */
+  /* Smooth scrolling & GPU acceleration */
   html {
-    scroll-behavior: auto;
+    scroll-behavior: smooth;
   }
 
   /* Enable GPU acceleration for smooth animations */
@@ -158,7 +158,7 @@
   }
 
   .card-interactive {
-    @apply card-elevated;
+    @apply card-elevated transition-all duration-200;
   }
 
   .card-interactive:hover {
@@ -189,9 +189,11 @@
     background-attachment: fixed;
   }
 
-  /* Static mesh background - no animation for speed */
+  /* Animated mesh background */
   .bg-animated-mesh {
     background: var(--gradient-mesh);
+    background-size: 200% 200%;
+    animation: meshMove 20s ease infinite;
   }
 
   /* Wallpaper pattern */
@@ -229,21 +231,25 @@
     box-shadow: var(--shadow-glow);
   }
 
-  /* Static orbs for background decoration - no animation */
+  /* Floating orbs for background decoration */
   .floating-orb {
     @apply absolute rounded-full blur-3xl opacity-30 pointer-events-none;
+    animation: float 15s ease-in-out infinite;
   }
 
   .floating-orb-1 {
     @apply bg-primary/20 w-64 h-64 -top-32 -left-32;
+    animation-delay: 0s;
   }
 
   .floating-orb-2 {
     @apply bg-accent/30 w-96 h-96 -bottom-48 -right-48;
+    animation-delay: -5s;
   }
 
   .floating-orb-3 {
     @apply bg-success/10 w-48 h-48 top-1/2 left-1/4;
+    animation-delay: -10s;
   }
 
   /* Sidebar active state */
@@ -289,51 +295,72 @@
     @apply -translate-y-6 text-xs text-primary;
   }
 
-  /* Page transition wrapper - instant */
+  /* Page transition wrapper */
   .page-transition {
-    /* No animation for speed */
+    animation: pageEnter 0.4s ease-out;
   }
 
-  /* Stagger children - instant display */
+  /* Stagger children animation */
   .stagger-children > * {
-    /* No animation for speed */
+    animation: fadeSlideUp 0.4s ease-out backwards;
   }
 
-  /* Hover lift effect - instant */
+  .stagger-children > *:nth-child(1) { animation-delay: 0.05s; }
+  .stagger-children > *:nth-child(2) { animation-delay: 0.1s; }
+  .stagger-children > *:nth-child(3) { animation-delay: 0.15s; }
+  .stagger-children > *:nth-child(4) { animation-delay: 0.2s; }
+  .stagger-children > *:nth-child(5) { animation-delay: 0.25s; }
+  .stagger-children > *:nth-child(6) { animation-delay: 0.3s; }
+  .stagger-children > *:nth-child(7) { animation-delay: 0.35s; }
+  .stagger-children > *:nth-child(8) { animation-delay: 0.4s; }
+
+  /* Hover lift effect */
+  .hover-lift {
+    @apply transition-all duration-300;
+  }
+
   .hover-lift:hover {
+    transform: translateY(-4px);
     box-shadow: var(--shadow-elevated);
   }
 
-  /* Shimmer effect for loading - static */
+  /* Shimmer effect for loading */
   .shimmer {
-    background: hsl(var(--muted));
+    background: linear-gradient(
+      90deg,
+      hsl(var(--muted)) 0%,
+      hsl(var(--muted-foreground) / 0.1) 50%,
+      hsl(var(--muted)) 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.5s ease-in-out infinite;
   }
 }
 
 @layer utilities {
-  /* Animation utilities - disabled for speed */
+  /* Animation utilities */
   .animate-fade-in {
-    /* instant */
+    animation: fadeIn 0.3s ease-out;
   }
 
   .animate-slide-up {
-    /* instant */
+    animation: slideUp 0.3s ease-out;
   }
 
   .animate-slide-in-right {
-    /* instant */
+    animation: slideInRight 0.3s ease-out;
   }
 
   .animate-scale-in {
-    /* instant */
+    animation: scaleIn 0.2s ease-out;
   }
 
   .animate-bounce-in {
-    /* instant */
+    animation: bounceIn 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
   }
 
   .animate-pulse-glow {
-    /* instant */
+    animation: pulseGlow 2s ease-in-out infinite;
   }
 
   @keyframes fadeIn {

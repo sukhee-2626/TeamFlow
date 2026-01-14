@@ -4,11 +4,10 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { Loader2 } from "lucide-react";
 
-// Eager-load the landing page to avoid a slow first paint on "/"
-import Index from "./pages/Index";
-
-// Lazy load non-critical pages for better performance
+// Lazy load pages for better performance
+const Index = lazy(() => import("./pages/Index"));
 const Auth = lazy(() => import("./pages/Auth"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const WorkspacePage = lazy(() => import("./pages/WorkspacePage"));
@@ -26,9 +25,11 @@ const queryClient = new QueryClient({
   },
 });
 
-// Minimal loading fallback - just a simple placeholder
+// Loading fallback
 const PageLoader = () => (
-  <div className="min-h-screen bg-background" />
+  <div className="min-h-screen flex items-center justify-center bg-background">
+    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+  </div>
 );
 
 const App = () => (
