@@ -89,18 +89,18 @@ export default function WorkspacePage() {
 
   if (authLoading || isLoading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="min-h-screen bg-wallpaper flex items-center justify-center">
+        <div className="h-8 w-8 rounded-full border-2 border-primary border-t-transparent animate-spin"></div>
       </div>
     );
   }
 
   if (!workspace || !user) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-xl font-semibold text-foreground mb-2">Workspace not found</h2>
-          <Button variant="outline" onClick={() => navigate("/dashboard")}>
+      <div className="min-h-screen bg-wallpaper flex items-center justify-center page-transition">
+        <div className="text-center card-glass p-8 animate-scale-in">
+          <h2 className="text-xl font-semibold text-foreground mb-4">Workspace not found</h2>
+          <Button variant="outline" onClick={() => navigate("/dashboard")} className="hover-lift">
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Dashboard
           </Button>
@@ -113,21 +113,25 @@ export default function WorkspacePage() {
   const workflowTasks = tasks.filter(t => t.workflow_id === activeWorkflow);
 
   return (
-    <div className="min-h-screen bg-muted/30">
+    <div className="min-h-screen bg-wallpaper relative overflow-hidden page-transition">
+      {/* Floating orbs */}
+      <div className="floating-orb floating-orb-1"></div>
+      <div className="floating-orb floating-orb-2"></div>
+
       {/* Header */}
-      <header className="sticky top-0 z-50 border-b border-border bg-background">
+      <header className="sticky top-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-lg">
         <div className="container flex h-16 items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => navigate("/dashboard")}>
+          <div className="flex items-center gap-4 animate-fade-in">
+            <Button variant="ghost" size="icon" onClick={() => navigate("/dashboard")} className="hover-lift">
               <ArrowLeft className="h-4 w-4" />
             </Button>
             <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-primary">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-primary animate-pulse-glow">
                 <LayoutGrid className="h-5 w-5 text-primary-foreground" />
               </div>
               <span className="text-xl font-bold text-foreground">{workspace.name}</span>
               {isManager && (
-                <Badge className="bg-warning/20 text-warning border-warning/30">
+                <Badge className="bg-warning/20 text-warning border-warning/30 animate-bounce-in">
                   <Crown className="h-3 w-3 mr-1" />
                   Owner
                 </Badge>
@@ -135,10 +139,10 @@ export default function WorkspacePage() {
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 animate-fade-in" style={{ animationDelay: "0.1s" }}>
             <WorkspaceChat workspaceId={id || ""} workspaceName={workspace.name} members={members} />
             <div className="flex items-center gap-2">
-              <span className="h-2 w-2 rounded-full bg-green-500"></span>
+              <span className="h-2 w-2 rounded-full bg-success animate-pulse"></span>
               <span className="text-sm text-muted-foreground">{user.email}</span>
             </div>
           </div>
@@ -146,7 +150,7 @@ export default function WorkspacePage() {
       </header>
 
       {/* Main content */}
-      <main className="container py-6">
+      <main className="container py-6 relative z-10 animate-slide-up">
         <Tabs defaultValue="dashboard" className="space-y-6">
           <TabsList>
             <TabsTrigger value="dashboard">
@@ -211,10 +215,10 @@ export default function WorkspacePage() {
                   onDeleteWorkflow={() => deleteWorkflow(currentWorkflow.id)}
                 />
               ) : (
-                <div className="card-elevated p-12 text-center">
+                <div className="card-glass p-12 text-center animate-scale-in">
                   <p className="text-muted-foreground mb-4">No workflows yet</p>
                   {isManager && (
-                    <Button onClick={() => setShowCreateWorkflow(true)}>
+                    <Button onClick={() => setShowCreateWorkflow(true)} className="hover-lift">
                       <Plus className="h-4 w-4 mr-2" />
                       Create your first workflow
                     </Button>
@@ -225,7 +229,7 @@ export default function WorkspacePage() {
           </TabsContent>
 
           <TabsContent value="members">
-            <div className="card-elevated p-6">
+            <div className="card-glass p-6 animate-fade-in">
               <div className="flex items-center justify-between mb-6">
                 <div>
                   <h3 className="text-lg font-semibold text-foreground">Team Members</h3>
