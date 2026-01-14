@@ -6,8 +6,10 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 
-// Lazy load pages for better performance
-const Index = lazy(() => import("./pages/Index"));
+// Eager-load the landing page to avoid a slow first paint on "/"
+import Index from "./pages/Index";
+
+// Lazy load non-critical pages for better performance
 const Auth = lazy(() => import("./pages/Auth"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const WorkspacePage = lazy(() => import("./pages/WorkspacePage"));
