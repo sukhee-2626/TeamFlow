@@ -2,11 +2,7 @@ import { useState, useMemo } from "react";
 import { Workflow, Task, TaskStatus, TaskVisibility, WorkspaceMember } from "@/types/database";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Plus } from "lucide-react/dist/esm/icons/plus";
-import { MoreVertical } from "lucide-react/dist/esm/icons/more-vertical";
-import { Filter } from "lucide-react/dist/esm/icons/filter";
-import { User } from "lucide-react/dist/esm/icons/user";
-import { AlertTriangle } from "lucide-react/dist/esm/icons/alert-triangle";
+import { Plus, MoreVertical, Filter, User, AlertTriangle } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,

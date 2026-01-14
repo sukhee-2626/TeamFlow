@@ -1,7 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { ArrowRight } from "lucide-react/dist/esm/icons/arrow-right";
-import { CheckCircle2 } from "lucide-react/dist/esm/icons/check-circle-2";
-import { Sparkles } from "lucide-react/dist/esm/icons/sparkles";
+import { ArrowRight, CheckCircle2, Sparkles } from "lucide-react";
 import { Link } from "react-router-dom";
 
 export function Hero() {
