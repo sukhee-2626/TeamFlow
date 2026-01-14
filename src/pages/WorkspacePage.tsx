@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { 
@@ -16,12 +16,34 @@ import { useAuth } from "@/hooks/useAuth";
 import { useWorkspaceDetails } from "@/hooks/useWorkspace";
 import { useWorkflows } from "@/hooks/useWorkflows";
 import { useTasks } from "@/hooks/useTasks";
-import { MembersList } from "@/components/workspace/MembersList";
-import { WorkspaceDashboard } from "@/components/workspace/WorkspaceDashboard";
-import { WorkflowBoard } from "@/components/workspace/WorkflowBoard";
-import { WorkspaceSettings } from "@/components/workspace/WorkspaceSettings";
 import { CreateWorkflowDialog } from "@/components/workspace/CreateWorkflowDialog";
 import { WorkspaceChat } from "@/components/workspace/WorkspaceChat";
+
+const MembersList = lazy(async () => {
+  const mod = await import("@/components/workspace/MembersList");
+  return { default: mod.MembersList };
+});
+
+const WorkspaceDashboard = lazy(async () => {
+  const mod = await import("@/components/workspace/WorkspaceDashboard");
+  return { default: mod.WorkspaceDashboard };
+});
+
+const WorkflowBoard = lazy(async () => {
+  const mod = await import("@/components/workspace/WorkflowBoard");
+  return { default: mod.WorkflowBoard };
+});
+
+const WorkspaceSettings = lazy(async () => {
+  const mod = await import("@/components/workspace/WorkspaceSettings");
+  return { default: mod.WorkspaceSettings };
+});
+
+const TabLoader = () => (
+  <div className="flex justify-center py-10">
+    <div className="h-8 w-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+  </div>
+);
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -109,8 +131,15 @@ export default function WorkspacePage() {
     );
   }
 
-  const currentWorkflow = workflows.find(w => w.id === activeWorkflow);
-  const workflowTasks = tasks.filter(t => t.workflow_id === activeWorkflow);
+  const currentWorkflow = useMemo(
+    () => workflows.find((w) => w.id === activeWorkflow) ?? null,
+    [workflows, activeWorkflow]
+  );
+
+  const workflowTasks = useMemo(
+    () => tasks.filter((t) => t.workflow_id === activeWorkflow),
+    [tasks, activeWorkflow]
+  );
 
   return (
     <div className="min-h-screen bg-wallpaper relative overflow-hidden page-transition">
@@ -174,7 +203,9 @@ export default function WorkspacePage() {
           </TabsList>
 
           <TabsContent value="dashboard">
-            <WorkspaceDashboard tasks={tasks} currentUserId={user.id} />
+            <Suspense fallback={<TabLoader />}>
+              <WorkspaceDashboard tasks={tasks} currentUserId={user.id} />
+            </Suspense>
           </TabsContent>
 
           <TabsContent value="workflows">
@@ -202,18 +233,20 @@ export default function WorkspacePage() {
               </div>
 
               {currentWorkflow ? (
-                <WorkflowBoard
-                  workflow={currentWorkflow}
-                  tasks={workflowTasks}
-                  members={members}
-                  isManager={isManager}
-                  currentUserId={user.id}
-                  onUpdateStatus={updateTaskStatus}
-                  onCreateTask={createTask}
-                  onUpdateTask={updateTask}
-                  onDeleteTask={deleteTask}
-                  onDeleteWorkflow={() => deleteWorkflow(currentWorkflow.id)}
-                />
+                <Suspense fallback={<TabLoader />}>
+                  <WorkflowBoard
+                    workflow={currentWorkflow}
+                    tasks={workflowTasks}
+                    members={members}
+                    isManager={isManager}
+                    currentUserId={user.id}
+                    onUpdateStatus={updateTaskStatus}
+                    onCreateTask={createTask}
+                    onUpdateTask={updateTask}
+                    onDeleteTask={deleteTask}
+                    onDeleteWorkflow={() => deleteWorkflow(currentWorkflow.id)}
+                  />
+                </Suspense>
               ) : (
                 <div className="card-glass p-12 text-center animate-scale-in">
                   <p className="text-muted-foreground mb-4">No workflows yet</p>
@@ -236,19 +269,23 @@ export default function WorkspacePage() {
                   <p className="text-sm text-muted-foreground">Manage who has access to this workspace</p>
                 </div>
               </div>
-              <MembersList
-                members={members}
-                currentUserId={user.id}
-                isManager={isManager}
-                onUpdateRole={handleUpdateRole}
-                onRemoveMember={handleRemoveMember}
-              />
+              <Suspense fallback={<TabLoader />}>
+                <MembersList
+                  members={members}
+                  currentUserId={user.id}
+                  isManager={isManager}
+                  onUpdateRole={handleUpdateRole}
+                  onRemoveMember={handleRemoveMember}
+                />
+              </Suspense>
             </div>
           </TabsContent>
 
           {isManager && (
             <TabsContent value="settings">
-              <WorkspaceSettings workspace={workspace} onUpdate={updateWorkspace} />
+              <Suspense fallback={<TabLoader />}>
+                <WorkspaceSettings workspace={workspace} onUpdate={updateWorkspace} />
+              </Suspense>
             </TabsContent>
           )}
         </Tabs>
