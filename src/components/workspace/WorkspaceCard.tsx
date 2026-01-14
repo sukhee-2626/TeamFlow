@@ -9,14 +9,14 @@ interface WorkspaceCardProps {
 
 export function WorkspaceCard({ workspace }: WorkspaceCardProps) {
   return (
-    <Link to={`/workspace/${workspace.id}`} className="block">
-      <div className="card-interactive p-6 h-full">
+    <Link to={`/workspace/${workspace.id}`} className="block group">
+      <div className="card-glass p-6 h-full hover-lift transition-all duration-300 group-hover:border-primary/30">
         <div className="mb-4">
-          <div className="h-12 w-12 rounded-xl bg-accent flex items-center justify-center mb-4">
-            <Folder className="h-6 w-6 text-accent-foreground" />
+          <div className="h-12 w-12 rounded-xl bg-gradient-primary/10 flex items-center justify-center mb-4 transition-transform duration-300 group-hover:scale-110">
+            <Folder className="h-6 w-6 text-primary" />
           </div>
           
-          <h3 className="text-lg font-semibold text-foreground mb-1">
+          <h3 className="text-lg font-semibold text-foreground mb-1 group-hover:text-primary transition-colors">
             {workspace.name}
           </h3>
 
@@ -27,7 +27,7 @@ export function WorkspaceCard({ workspace }: WorkspaceCardProps) {
           )}
         </div>
 
-        <div className="flex items-center gap-4 text-sm text-muted-foreground pt-4 border-t border-border">
+        <div className="flex items-center gap-4 text-sm text-muted-foreground pt-4 border-t border-border/50">
           <div className="flex items-center gap-1.5">
             <Users className="h-4 w-4" />
             <span>{workspace.member_count || 0} members</span>

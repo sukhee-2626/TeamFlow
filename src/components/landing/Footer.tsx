@@ -3,9 +3,9 @@ import { Link } from "react-router-dom";
 
 export function Footer() {
   return (
-    <footer className="border-t border-border bg-muted/30">
+    <footer className="border-t border-border/50 bg-background/80 backdrop-blur-lg">
       <div className="container py-12">
-        <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+        <div className="flex flex-col md:flex-row items-center justify-between gap-6 animate-fade-in">
           {/* Logo */}
           <div className="flex items-center gap-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-primary">
@@ -16,16 +16,16 @@ export function Footer() {
 
           {/* Links */}
           <div className="flex items-center gap-6 text-sm text-muted-foreground">
-            <Link to="/" className="hover:text-foreground transition-colors">
+            <Link to="/" className="hover:text-foreground transition-colors hover:scale-105 transform">
               Features
             </Link>
-            <Link to="/" className="hover:text-foreground transition-colors">
+            <Link to="/" className="hover:text-foreground transition-colors hover:scale-105 transform">
               Pricing
             </Link>
-            <Link to="/" className="hover:text-foreground transition-colors">
+            <Link to="/" className="hover:text-foreground transition-colors hover:scale-105 transform">
               Privacy
             </Link>
-            <Link to="/" className="hover:text-foreground transition-colors">
+            <Link to="/" className="hover:text-foreground transition-colors hover:scale-105 transform">
               Terms
             </Link>
           </div>

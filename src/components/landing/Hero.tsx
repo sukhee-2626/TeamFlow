@@ -7,15 +7,16 @@ export function Hero() {
     <section className="relative overflow-hidden bg-gradient-hero py-24 lg:py-32">
       {/* Decorative elements */}
       <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute -top-40 -right-40 h-80 w-80 rounded-full bg-primary/5 blur-3xl" />
-        <div className="absolute -bottom-40 -left-40 h-80 w-80 rounded-full bg-primary/5 blur-3xl" />
+        <div className="floating-orb floating-orb-1"></div>
+        <div className="floating-orb floating-orb-2"></div>
+        <div className="floating-orb floating-orb-3"></div>
       </div>
 
       <div className="container relative">
         <div className="mx-auto max-w-3xl text-center">
           {/* Badge */}
-          <div className="mb-6 inline-flex items-center gap-2 rounded-full bg-accent px-4 py-1.5 text-sm text-accent-foreground animate-fade-in">
-            <Sparkles className="h-4 w-4" />
+          <div className="mb-6 inline-flex items-center gap-2 rounded-full bg-accent/80 backdrop-blur-sm px-4 py-1.5 text-sm text-accent-foreground animate-bounce-in">
+            <Sparkles className="h-4 w-4 animate-pulse" />
             <span>Simple project management for modern teams</span>
           </div>
 
@@ -33,13 +34,13 @@ export function Hero() {
 
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12 animate-slide-up" style={{ animationDelay: "0.2s" }}>
-            <Button variant="hero" size="xl" asChild>
+            <Button variant="hero" size="xl" asChild className="hover-lift">
               <Link to="/auth">
                 Get started free
                 <ArrowRight className="h-5 w-5" />
               </Link>
             </Button>
-            <Button variant="outline" size="xl" asChild>
+            <Button variant="outline" size="xl" asChild className="hover-lift">
               <Link to="/auth">
                 Sign in
               </Link>
@@ -47,7 +48,7 @@ export function Hero() {
           </div>
 
           {/* Features list */}
-          <div className="flex flex-wrap items-center justify-center gap-6 text-sm text-muted-foreground animate-fade-in" style={{ animationDelay: "0.3s" }}>
+          <div className="flex flex-wrap items-center justify-center gap-6 text-sm text-muted-foreground stagger-children">
             <div className="flex items-center gap-2">
               <CheckCircle2 className="h-4 w-4 text-success" />
               <span>Free to start</span>
