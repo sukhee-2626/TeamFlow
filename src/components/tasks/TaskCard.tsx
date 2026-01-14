@@ -3,14 +3,7 @@ import { Task, TaskVisibility, TaskStatus, WorkspaceMember } from "@/types/datab
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Calendar } from "lucide-react/dist/esm/icons/calendar";
-import { Eye } from "lucide-react/dist/esm/icons/eye";
-import { EyeOff } from "lucide-react/dist/esm/icons/eye-off";
-import { GripVertical } from "lucide-react/dist/esm/icons/grip-vertical";
-import { Trash2 } from "lucide-react/dist/esm/icons/trash-2";
-import { Pencil } from "lucide-react/dist/esm/icons/pencil";
-import { ArrowRight } from "lucide-react/dist/esm/icons/arrow-right";
-import { Check } from "lucide-react/dist/esm/icons/check";
+import { Calendar, Eye, EyeOff, GripVertical, Trash2, Pencil, ArrowRight, Check } from "lucide-react";
 import { format, isPast, isToday, isTomorrow } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
