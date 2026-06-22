@@ -70,7 +70,7 @@ export function useChat(workspaceId: string, recipientId?: string | null) {
   useEffect(() => {
     fetchMessages();
 
-    let debounceTimer: NodeJS.Timeout;
+    let debounceTimer: ReturnType<typeof setTimeout>;
     const channel = supabase
       .channel(`messages-${workspaceId}-${recipientId || 'group'}`)
       .on(
