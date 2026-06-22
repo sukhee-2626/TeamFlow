@@ -59,7 +59,7 @@ export function useTasks(workspaceId: string, workflowId?: string | null) {
     fetchedRef.current = true;
 
     // Set up realtime subscription with debounce
-    let debounceTimer: NodeJS.Timeout;
+    let debounceTimer: ReturnType<typeof setTimeout>;
     const channel = supabase
       .channel(`tasks-${workspaceId}-${workflowId || 'all'}`)
       .on(
@@ -157,9 +157,10 @@ export function useTasks(workspaceId: string, workflowId?: string | null) {
       t.id === taskId ? { ...t, ...updates } : t
     ));
 
+    const { assigned_user: _ignored, ...dbUpdates } = updates as Partial<Task> & { assigned_user?: unknown };
     const { error } = await supabase
       .from('tasks')
-      .update(updates)
+      .update(dbUpdates)
       .eq('id', taskId);
 
     if (error) {
