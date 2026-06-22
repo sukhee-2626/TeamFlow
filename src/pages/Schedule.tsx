@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { format, isToday, isTomorrow, isPast, parseISO } from "date-fns";
+import { format, isToday, isTomorrow, isPast, isSameDay, parseISO } from "date-fns";
 import {
   ArrowLeft, CalendarDays, Plus, Trash2, Loader2, CheckCircle2,
-  Circle, Clock, Flag, Briefcase, ListTodo
+  Circle, Clock, Flag, Briefcase, ListTodo, KanbanSquare, ArrowLeftCircle, ArrowRightCircle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Calendar } from "@/components/ui/calendar";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter,
 } from "@/components/ui/dialog";
@@ -20,7 +21,7 @@ import {
 import { useAuth } from "@/hooks/useAuth";
 import {
   usePersonalTasks, useAssignedWorkspaceTasks,
-  type PersonalTask, type PersonalTaskPriority,
+  type PersonalTask, type PersonalTaskPriority, type PersonalTaskStatus,
 } from "@/hooks/usePersonalTasks";
 
 const priorityColor: Record<PersonalTaskPriority, string> = {
@@ -40,9 +41,10 @@ function formatWhen(iso: string | null) {
 export default function Schedule() {
   const { user, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
-  const { tasks, isLoading, createTask, toggleComplete, deleteTask } = usePersonalTasks();
+  const { tasks, isLoading, createTask, updateTask, toggleComplete, deleteTask } = usePersonalTasks();
   const { tasks: assigned, isLoading: assignedLoading } = useAssignedWorkspaceTasks();
   const [open, setOpen] = useState(false);
+  const [selectedDay, setSelectedDay] = useState<Date>(new Date());
 
   // form
   const [title, setTitle] = useState("");
@@ -71,6 +73,26 @@ export default function Schedule() {
     return { overdue, today, upcoming, someday, done };
   }, [tasks]);
 
+  // Kanban columns
+  const kanban = useMemo(() => ({
+    todo: tasks.filter(t => t.status === 'todo'),
+    ongoing: tasks.filter(t => t.status === 'ongoing'),
+    completed: tasks.filter(t => t.status === 'completed'),
+  }), [tasks]);
+
+  // Calendar: tasks for the selected day + day-marker set
+  const scheduledDays = useMemo(() => {
+    const set = new Set<string>();
+    tasks.forEach(t => {
+      if (t.scheduled_at) set.add(format(parseISO(t.scheduled_at), 'yyyy-MM-dd'));
+    });
+    return set;
+  }, [tasks]);
+
+  const dayTasks = useMemo(() =>
+    tasks.filter(t => t.scheduled_at && isSameDay(parseISO(t.scheduled_at), selectedDay))
+  , [tasks, selectedDay]);
+
   const submit = async () => {
     if (!title.trim()) return;
     await createTask({
@@ -82,6 +104,12 @@ export default function Schedule() {
     setTitle(""); setDescription(""); setPriority("medium"); setScheduledAt("");
     setOpen(false);
   };
+
+  const moveTo = (t: PersonalTask, status: PersonalTaskStatus) =>
+    updateTask(t.id, {
+      status,
+      completed_at: status === 'completed' ? new Date().toISOString() : null,
+    });
 
   if (authLoading || !user) {
     return (
@@ -135,6 +163,62 @@ export default function Schedule() {
         <div className="space-y-2">{items.map(renderTask)}</div>
       </div>
     );
+
+  const KanbanCard = ({ t }: { t: PersonalTask }) => (
+    <Card className="p-3 space-y-2 hover:shadow-md transition-shadow">
+      <div className="flex items-start justify-between gap-2">
+        <h4 className="font-medium text-sm leading-snug">{t.title}</h4>
+        <Badge variant="outline" className={priorityColor[t.priority]}>
+          <Flag className="h-3 w-3 mr-1" />{t.priority}
+        </Badge>
+      </div>
+      {t.description && (
+        <p className="text-xs text-muted-foreground line-clamp-2">{t.description}</p>
+      )}
+      <div className="flex items-center justify-between text-xs text-muted-foreground">
+        <span className="flex items-center gap-1">
+          <Clock className="h-3 w-3" />{formatWhen(t.scheduled_at)}
+        </span>
+      </div>
+      <div className="flex items-center gap-1 pt-1 border-t border-border/50">
+        {t.status !== 'todo' && (
+          <Button variant="ghost" size="sm" className="h-7 px-2 text-xs"
+            onClick={() => moveTo(t, t.status === 'completed' ? 'ongoing' : 'todo')}>
+            <ArrowLeftCircle className="h-3.5 w-3.5 mr-1" />Back
+          </Button>
+        )}
+        {t.status !== 'completed' && (
+          <Button variant="ghost" size="sm" className="h-7 px-2 text-xs ml-auto"
+            onClick={() => moveTo(t, t.status === 'todo' ? 'ongoing' : 'completed')}>
+            {t.status === 'todo' ? 'Start' : 'Complete'}
+            <ArrowRightCircle className="h-3.5 w-3.5 ml-1" />
+          </Button>
+        )}
+        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => deleteTask(t.id)}>
+          <Trash2 className="h-3.5 w-3.5" />
+        </Button>
+      </div>
+    </Card>
+  );
+
+  const KanbanColumn = ({ title, status, items, tint }: {
+    title: string; status: PersonalTaskStatus; items: PersonalTask[]; tint: string;
+  }) => (
+    <div className="flex-1 min-w-[260px]">
+      <div className={`rounded-xl p-3 min-h-[400px] ${tint}`}>
+        <div className="flex items-center justify-between mb-3 px-1">
+          <h4 className="font-semibold text-sm">{title}</h4>
+          <Badge variant="secondary" className="h-5 px-2 text-xs">{items.length}</Badge>
+        </div>
+        <div className="space-y-2">
+          {items.map(t => <KanbanCard key={t.id} t={t} />)}
+          {items.length === 0 && (
+            <p className="text-xs text-muted-foreground text-center py-6">No tasks</p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-background page-transition">
@@ -196,6 +280,12 @@ export default function Schedule() {
             <TabsTrigger value="personal" className="gap-2">
               <ListTodo className="h-4 w-4" />Personal ({tasks.filter(t => t.status !== 'completed').length})
             </TabsTrigger>
+            <TabsTrigger value="kanban" className="gap-2">
+              <KanbanSquare className="h-4 w-4" />My Workflow
+            </TabsTrigger>
+            <TabsTrigger value="calendar" className="gap-2">
+              <CalendarDays className="h-4 w-4" />Calendar
+            </TabsTrigger>
             <TabsTrigger value="assigned" className="gap-2">
               <Briefcase className="h-4 w-4" />Assigned to me ({assigned.length})
             </TabsTrigger>
@@ -220,6 +310,61 @@ export default function Schedule() {
                 <Section title="Completed" items={grouped.done} />
               </>
             )}
+          </TabsContent>
+
+          <TabsContent value="kanban">
+            {isLoading ? (
+              <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
+            ) : (
+              <div className="flex gap-4 overflow-x-auto pb-4">
+                <KanbanColumn title="To Do" status="todo" items={kanban.todo} tint="bg-muted/50" />
+                <KanbanColumn title="In Progress" status="ongoing" items={kanban.ongoing} tint="bg-amber-500/5" />
+                <KanbanColumn title="Done" status="completed" items={kanban.completed} tint="bg-green-500/5" />
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="calendar">
+            <div className="grid md:grid-cols-[auto_1fr] gap-6">
+              <Card className="p-3 w-fit">
+                <Calendar
+                  mode="single"
+                  selected={selectedDay}
+                  onSelect={(d) => d && setSelectedDay(d)}
+                  modifiers={{
+                    hasTask: (date) => scheduledDays.has(format(date, 'yyyy-MM-dd')),
+                  }}
+                  modifiersClassNames={{
+                    hasTask: 'relative after:absolute after:bottom-1 after:left-1/2 after:-translate-x-1/2 after:h-1 after:w-1 after:rounded-full after:bg-primary',
+                  }}
+                  className="pointer-events-auto"
+                />
+              </Card>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-semibold">
+                    {format(selectedDay, 'EEEE, MMMM d')}
+                  </h3>
+                  <Badge variant="secondary">{dayTasks.length} task{dayTasks.length === 1 ? '' : 's'}</Badge>
+                </div>
+                {dayTasks.length === 0 ? (
+                  <Card className="p-8 text-center">
+                    <CalendarDays className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+                    <p className="text-sm text-muted-foreground">Nothing scheduled for this day.</p>
+                    <Button size="sm" className="mt-3" onClick={() => {
+                      setScheduledAt(format(selectedDay, "yyyy-MM-dd'T'09:00"));
+                      setOpen(true);
+                    }}>
+                      <Plus className="h-4 w-4 mr-1" />Add task
+                    </Button>
+                  </Card>
+                ) : (
+                  dayTasks
+                    .sort((a, b) => (a.scheduled_at || '').localeCompare(b.scheduled_at || ''))
+                    .map(renderTask)
+                )}
+              </div>
+            </div>
           </TabsContent>
 
           <TabsContent value="assigned" className="space-y-2">
