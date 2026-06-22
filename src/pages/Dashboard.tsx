@@ -7,7 +7,8 @@ import {
   LogOut, 
   Folder,
   Loader2,
-  UserPlus
+  UserPlus,
+  CalendarDays
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useWorkspaces } from "@/hooks/useWorkspace";
@@ -92,6 +93,10 @@ export default function Dashboard() {
           </div>
           
           <div className="flex gap-2">
+            <Button variant="outline" onClick={() => navigate("/schedule")} className="hover-lift">
+              <CalendarDays className="h-4 w-4 mr-2" />
+              My Schedule
+            </Button>
             <Button variant="outline" onClick={() => setShowJoinDialog(true)} className="hover-lift">
               <UserPlus className="h-4 w-4 mr-2" />
               Join with Code
