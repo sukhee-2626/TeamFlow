@@ -11,6 +11,7 @@ const Index = lazy(() => import("./pages/Index"));
 const Auth = lazy(() => import("./pages/Auth"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const WorkspacePage = lazy(() => import("./pages/WorkspacePage"));
+const Schedule = lazy(() => import("./pages/Schedule"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 // Optimized QueryClient with caching
@@ -43,6 +44,7 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/schedule" element={<Schedule />} />
             <Route path="/workspace/:id" element={<WorkspacePage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
