@@ -52,6 +52,51 @@ export type Database = {
           },
         ]
       }
+      personal_tasks: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          deadline: string | null
+          description: string | null
+          id: string
+          position: number
+          priority: string
+          scheduled_at: string | null
+          status: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          deadline?: string | null
+          description?: string | null
+          id?: string
+          position?: number
+          priority?: string
+          scheduled_at?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          deadline?: string | null
+          description?: string | null
+          id?: string
+          position?: number
+          priority?: string
+          scheduled_at?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
