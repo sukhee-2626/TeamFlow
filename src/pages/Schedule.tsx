@@ -3,7 +3,8 @@ import { useNavigate, Link } from "react-router-dom";
 import { format, isToday, isTomorrow, isPast, isSameDay, parseISO } from "date-fns";
 import {
   ArrowLeft, CalendarDays, Plus, Trash2, Loader2, CheckCircle2,
-  Circle, Clock, Flag, Briefcase, ListTodo, KanbanSquare, ArrowLeftCircle, ArrowRightCircle
+  Circle, Clock, Flag, Briefcase, ListTodo, KanbanSquare, ArrowLeftCircle, ArrowRightCircle,
+  GripVertical, Pencil, Settings2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,6 +24,15 @@ import {
   usePersonalTasks, useAssignedWorkspaceTasks,
   type PersonalTask, type PersonalTaskPriority, type PersonalTaskStatus,
 } from "@/hooks/usePersonalTasks";
+import { usePersonalStages, STAGE_COLORS, colorFor, type PersonalStage } from "@/hooks/usePersonalStages";
+import {
+  DndContext, PointerSensor, useSensor, useSensors, closestCenter,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext, horizontalListSortingStrategy, useSortable, arrayMove,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 const priorityColor: Record<PersonalTaskPriority, string> = {
   low: "bg-blue-500/15 text-blue-600 border-blue-500/30",
@@ -43,8 +53,12 @@ export default function Schedule() {
   const navigate = useNavigate();
   const { tasks, isLoading, createTask, updateTask, toggleComplete, deleteTask } = usePersonalTasks();
   const { tasks: assigned, isLoading: assignedLoading } = useAssignedWorkspaceTasks();
+  const { stages, createStage, updateStage, deleteStage, reorderStages } = usePersonalStages();
   const [open, setOpen] = useState(false);
   const [selectedDay, setSelectedDay] = useState<Date>(new Date());
+  const [manageOpen, setManageOpen] = useState(false);
+  const [newStageName, setNewStageName] = useState("");
+  const [newStageColor, setNewStageColor] = useState("slate");
 
   // form
   const [title, setTitle] = useState("");
@@ -73,12 +87,23 @@ export default function Schedule() {
     return { overdue, today, upcoming, someday, done };
   }, [tasks]);
 
-  // Kanban columns
-  const kanban = useMemo(() => ({
-    todo: tasks.filter(t => t.status === 'todo'),
-    ongoing: tasks.filter(t => t.status === 'ongoing'),
-    completed: tasks.filter(t => t.status === 'completed'),
-  }), [tasks]);
+  // Group tasks by custom stage. Tasks without a stage_id fall back by legacy status.
+  const tasksByStage = useMemo(() => {
+    const map: Record<string, PersonalTask[]> = {};
+    stages.forEach(s => { map[s.id] = []; });
+    const firstTodo = stages.find(s => !s.is_done) ?? stages[0];
+    const firstDone = stages.find(s => s.is_done);
+    const inProgress = stages.find(s => /progress|ongoing|doing/i.test(s.name)) ?? firstTodo;
+    for (const t of tasks) {
+      let target: PersonalStage | undefined;
+      if (t.stage_id && map[t.stage_id]) target = stages.find(s => s.id === t.stage_id);
+      else if (t.status === 'completed') target = firstDone ?? firstTodo;
+      else if (t.status === 'ongoing') target = inProgress;
+      else target = firstTodo;
+      if (target) map[target.id].push(t);
+    }
+    return map;
+  }, [tasks, stages]);
 
   // Calendar: tasks for the selected day + day-marker set
   const scheduledDays = useMemo(() => {
@@ -105,11 +130,27 @@ export default function Schedule() {
     setOpen(false);
   };
 
-  const moveTo = (t: PersonalTask, status: PersonalTaskStatus) =>
-    updateTask(t.id, {
+  const moveToStage = (t: PersonalTask, stage: PersonalStage) => {
+    const status: PersonalTaskStatus = stage.is_done
+      ? 'completed'
+      : stages[0]?.id === stage.id ? 'todo' : 'ongoing';
+    return updateTask(t.id, {
+      stage_id: stage.id,
       status,
-      completed_at: status === 'completed' ? new Date().toISOString() : null,
+      completed_at: stage.is_done ? new Date().toISOString() : null,
     });
+  };
+
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
+  const onStageDragEnd = (e: DragEndEvent) => {
+    const { active, over } = e;
+    if (!over || active.id === over.id) return;
+    const ids = stages.map(s => s.id);
+    const oldIdx = ids.indexOf(String(active.id));
+    const newIdx = ids.indexOf(String(over.id));
+    if (oldIdx < 0 || newIdx < 0) return;
+    reorderStages(arrayMove(ids, oldIdx, newIdx));
+  };
 
   if (authLoading || !user) {
     return (
@@ -164,7 +205,7 @@ export default function Schedule() {
       </div>
     );
 
-  const KanbanCard = ({ t }: { t: PersonalTask }) => (
+  const KanbanCard = ({ t, prev, next }: { t: PersonalTask; prev?: PersonalStage; next?: PersonalStage }) => (
     <Card className="p-3 space-y-2 hover:shadow-md transition-shadow">
       <div className="flex items-start justify-between gap-2">
         <h4 className="font-medium text-sm leading-snug">{t.title}</h4>
@@ -181,16 +222,16 @@ export default function Schedule() {
         </span>
       </div>
       <div className="flex items-center gap-1 pt-1 border-t border-border/50">
-        {t.status !== 'todo' && (
+        {prev && (
           <Button variant="ghost" size="sm" className="h-7 px-2 text-xs"
-            onClick={() => moveTo(t, t.status === 'completed' ? 'ongoing' : 'todo')}>
-            <ArrowLeftCircle className="h-3.5 w-3.5 mr-1" />Back
+            onClick={() => moveToStage(t, prev)} title={`Move to ${prev.name}`}>
+            <ArrowLeftCircle className="h-3.5 w-3.5 mr-1" />{prev.name}
           </Button>
         )}
-        {t.status !== 'completed' && (
+        {next && (
           <Button variant="ghost" size="sm" className="h-7 px-2 text-xs ml-auto"
-            onClick={() => moveTo(t, t.status === 'todo' ? 'ongoing' : 'completed')}>
-            {t.status === 'todo' ? 'Start' : 'Complete'}
+            onClick={() => moveToStage(t, next)} title={`Move to ${next.name}`}>
+            {next.name}
             <ArrowRightCircle className="h-3.5 w-3.5 ml-1" />
           </Button>
         )}
@@ -201,24 +242,42 @@ export default function Schedule() {
     </Card>
   );
 
-  const KanbanColumn = ({ title, status, items, tint }: {
-    title: string; status: PersonalTaskStatus; items: PersonalTask[]; tint: string;
-  }) => (
-    <div className="flex-1 min-w-[260px]">
-      <div className={`rounded-xl p-3 min-h-[400px] ${tint}`}>
-        <div className="flex items-center justify-between mb-3 px-1">
-          <h4 className="font-semibold text-sm">{title}</h4>
-          <Badge variant="secondary" className="h-5 px-2 text-xs">{items.length}</Badge>
-        </div>
-        <div className="space-y-2">
-          {items.map(t => <KanbanCard key={t.id} t={t} />)}
-          {items.length === 0 && (
-            <p className="text-xs text-muted-foreground text-center py-6">No tasks</p>
-          )}
+  const SortableKanbanColumn = ({ stage, items, prev, next }: {
+    stage: PersonalStage; items: PersonalTask[]; prev?: PersonalStage; next?: PersonalStage;
+  }) => {
+    const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
+      useSortable({ id: stage.id });
+    const style = {
+      transform: CSS.Transform.toString(transform),
+      transition,
+      opacity: isDragging ? 0.6 : 1,
+    };
+    const c = colorFor(stage.color);
+    return (
+      <div ref={setNodeRef} style={style} className="flex-shrink-0 w-[280px]">
+        <div className={`rounded-xl p-3 min-h-[400px] ${c.tint}`}>
+          <div className="flex items-center justify-between mb-3 px-1">
+            <div className="flex items-center gap-2 min-w-0">
+              <button {...attributes} {...listeners}
+                className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground"
+                aria-label="Reorder stage">
+                <GripVertical className="h-4 w-4" />
+              </button>
+              <span className={`h-2 w-2 rounded-full ${c.dot}`} />
+              <h4 className="font-semibold text-sm truncate">{stage.name}</h4>
+            </div>
+            <Badge variant="secondary" className="h-5 px-2 text-xs">{items.length}</Badge>
+          </div>
+          <div className="space-y-2">
+            {items.map(t => <KanbanCard key={t.id} t={t} prev={prev} next={next} />)}
+            {items.length === 0 && (
+              <p className="text-xs text-muted-foreground text-center py-6">No tasks</p>
+            )}
+          </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <div className="min-h-screen bg-background page-transition">
@@ -316,11 +375,39 @@ export default function Schedule() {
             {isLoading ? (
               <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
             ) : (
-              <div className="flex gap-4 overflow-x-auto pb-4">
-                <KanbanColumn title="To Do" status="todo" items={kanban.todo} tint="bg-muted/50" />
-                <KanbanColumn title="In Progress" status="ongoing" items={kanban.ongoing} tint="bg-amber-500/5" />
-                <KanbanColumn title="Done" status="completed" items={kanban.completed} tint="bg-green-500/5" />
-              </div>
+              <>
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-xs text-muted-foreground">
+                    Drag the handle to reorder stages. Click <Settings2 className="inline h-3 w-3" /> to customize.
+                  </p>
+                  <Button variant="outline" size="sm" onClick={() => setManageOpen(true)}>
+                    <Settings2 className="h-4 w-4 mr-2" />Customize stages
+                  </Button>
+                </div>
+                <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onStageDragEnd}>
+                  <SortableContext items={stages.map(s => s.id)} strategy={horizontalListSortingStrategy}>
+                    <div className="flex gap-4 overflow-x-auto pb-4">
+                      {stages.map((stage, i) => (
+                        <SortableKanbanColumn
+                          key={stage.id}
+                          stage={stage}
+                          items={tasksByStage[stage.id] || []}
+                          prev={stages[i - 1]}
+                          next={stages[i + 1]}
+                        />
+                      ))}
+                      <div className="flex-shrink-0 w-[280px]">
+                        <button
+                          onClick={() => setManageOpen(true)}
+                          className="w-full h-full min-h-[120px] rounded-xl border-2 border-dashed border-border hover:border-primary/40 hover:bg-muted/30 transition-colors flex items-center justify-center text-sm text-muted-foreground"
+                        >
+                          <Plus className="h-4 w-4 mr-2" />Add stage
+                        </button>
+                      </div>
+                    </div>
+                  </SortableContext>
+                </DndContext>
+              </>
             )}
           </TabsContent>
 
@@ -404,6 +491,92 @@ export default function Schedule() {
           </TabsContent>
         </Tabs>
       </main>
+
+      <Dialog open={manageOpen} onOpenChange={setManageOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader><DialogTitle>Customize workflow stages</DialogTitle></DialogHeader>
+          <div className="space-y-2 max-h-[50vh] overflow-y-auto">
+            {stages.map((s) => {
+              const c = colorFor(s.color);
+              return (
+                <div key={s.id} className="flex items-center gap-2 rounded-lg border border-border p-2">
+                  <span className={`h-3 w-3 rounded-full ${c.dot}`} />
+                  <Input
+                    value={s.name}
+                    onChange={(e) => updateStage(s.id, { name: e.target.value })}
+                    className="h-8 flex-1"
+                  />
+                  <Select value={s.color} onValueChange={(v) => updateStage(s.id, { color: v })}>
+                    <SelectTrigger className="h-8 w-[110px]"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {STAGE_COLORS.map(col => (
+                        <SelectItem key={col.id} value={col.id}>
+                          <span className="flex items-center gap-2">
+                            <span className={`h-2 w-2 rounded-full ${col.dot}`} />{col.id}
+                          </span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    variant={s.is_done ? "default" : "outline"}
+                    size="sm"
+                    className="h-8 px-2"
+                    onClick={() => updateStage(s.id, { is_done: !s.is_done })}
+                    title="Marks tasks as completed"
+                  >
+                    <CheckCircle2 className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button variant="ghost" size="icon" className="h-8 w-8"
+                    onClick={() => {
+                      if (stages.length <= 1) return;
+                      if (confirm(`Delete "${s.name}"? Tasks in it will be unassigned from any stage.`)) {
+                        deleteStage(s.id);
+                      }
+                    }}
+                    disabled={stages.length <= 1}>
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              );
+            })}
+          </div>
+          <div className="flex items-center gap-2 pt-2 border-t border-border">
+            <Input
+              placeholder="New stage name"
+              value={newStageName}
+              onChange={(e) => setNewStageName(e.target.value)}
+              className="h-9 flex-1"
+            />
+            <Select value={newStageColor} onValueChange={setNewStageColor}>
+              <SelectTrigger className="h-9 w-[110px]"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {STAGE_COLORS.map(col => (
+                  <SelectItem key={col.id} value={col.id}>
+                    <span className="flex items-center gap-2">
+                      <span className={`h-2 w-2 rounded-full ${col.dot}`} />{col.id}
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button
+              size="sm"
+              onClick={async () => {
+                if (!newStageName.trim()) return;
+                await createStage({ name: newStageName.trim(), color: newStageColor });
+                setNewStageName(""); setNewStageColor("slate");
+              }}
+              disabled={!newStageName.trim()}
+            >
+              <Plus className="h-4 w-4 mr-1" />Add
+            </Button>
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setManageOpen(false)}>Done</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

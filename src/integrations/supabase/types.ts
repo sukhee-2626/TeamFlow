@@ -52,6 +52,39 @@ export type Database = {
           },
         ]
       }
+      personal_stages: {
+        Row: {
+          color: string
+          created_at: string
+          id: string
+          is_done: boolean
+          name: string
+          position: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          id?: string
+          is_done?: boolean
+          name: string
+          position?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          id?: string
+          is_done?: boolean
+          name?: string
+          position?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       personal_tasks: {
         Row: {
           completed_at: string | null
@@ -62,6 +95,7 @@ export type Database = {
           position: number
           priority: string
           scheduled_at: string | null
+          stage_id: string | null
           status: string
           title: string
           updated_at: string
@@ -76,6 +110,7 @@ export type Database = {
           position?: number
           priority?: string
           scheduled_at?: string | null
+          stage_id?: string | null
           status?: string
           title: string
           updated_at?: string
@@ -90,12 +125,21 @@ export type Database = {
           position?: number
           priority?: string
           scheduled_at?: string | null
+          stage_id?: string | null
           status?: string
           title?: string
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "personal_tasks_stage_id_fkey"
+            columns: ["stage_id"]
+            isOneToOne: false
+            referencedRelation: "personal_stages"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
