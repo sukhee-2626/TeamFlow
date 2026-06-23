@@ -3,7 +3,8 @@ import { useNavigate, Link } from "react-router-dom";
 import { format, isToday, isTomorrow, isPast, isSameDay, parseISO } from "date-fns";
 import {
   ArrowLeft, CalendarDays, Plus, Trash2, Loader2, CheckCircle2,
-  Circle, Clock, Flag, Briefcase, ListTodo, KanbanSquare, ArrowLeftCircle, ArrowRightCircle
+  Circle, Clock, Flag, Briefcase, ListTodo, KanbanSquare, ArrowLeftCircle, ArrowRightCircle,
+  GripVertical, Pencil, Settings2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,6 +24,15 @@ import {
   usePersonalTasks, useAssignedWorkspaceTasks,
   type PersonalTask, type PersonalTaskPriority, type PersonalTaskStatus,
 } from "@/hooks/usePersonalTasks";
+import { usePersonalStages, STAGE_COLORS, colorFor, type PersonalStage } from "@/hooks/usePersonalStages";
+import {
+  DndContext, PointerSensor, useSensor, useSensors, closestCenter,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext, horizontalListSortingStrategy, useSortable, arrayMove,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 const priorityColor: Record<PersonalTaskPriority, string> = {
   low: "bg-blue-500/15 text-blue-600 border-blue-500/30",
