@@ -16,6 +16,7 @@ export interface PersonalTask {
   deadline: string | null;
   completed_at: string | null;
   position: number;
+  stage_id: string | null;
   created_at: string;
   updated_at: string;
 }
