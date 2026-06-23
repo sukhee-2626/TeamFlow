@@ -375,11 +375,39 @@ export default function Schedule() {
             {isLoading ? (
               <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
             ) : (
-              <div className="flex gap-4 overflow-x-auto pb-4">
-                <KanbanColumn title="To Do" status="todo" items={kanban.todo} tint="bg-muted/50" />
-                <KanbanColumn title="In Progress" status="ongoing" items={kanban.ongoing} tint="bg-amber-500/5" />
-                <KanbanColumn title="Done" status="completed" items={kanban.completed} tint="bg-green-500/5" />
-              </div>
+              <>
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-xs text-muted-foreground">
+                    Drag the handle to reorder stages. Click <Settings2 className="inline h-3 w-3" /> to customize.
+                  </p>
+                  <Button variant="outline" size="sm" onClick={() => setManageOpen(true)}>
+                    <Settings2 className="h-4 w-4 mr-2" />Customize stages
+                  </Button>
+                </div>
+                <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onStageDragEnd}>
+                  <SortableContext items={stages.map(s => s.id)} strategy={horizontalListSortingStrategy}>
+                    <div className="flex gap-4 overflow-x-auto pb-4">
+                      {stages.map((stage, i) => (
+                        <SortableKanbanColumn
+                          key={stage.id}
+                          stage={stage}
+                          items={tasksByStage[stage.id] || []}
+                          prev={stages[i - 1]}
+                          next={stages[i + 1]}
+                        />
+                      ))}
+                      <div className="flex-shrink-0 w-[280px]">
+                        <button
+                          onClick={() => setManageOpen(true)}
+                          className="w-full h-full min-h-[120px] rounded-xl border-2 border-dashed border-border hover:border-primary/40 hover:bg-muted/30 transition-colors flex items-center justify-center text-sm text-muted-foreground"
+                        >
+                          <Plus className="h-4 w-4 mr-2" />Add stage
+                        </button>
+                      </div>
+                    </div>
+                  </SortableContext>
+                </DndContext>
+              </>
             )}
           </TabsContent>
 
