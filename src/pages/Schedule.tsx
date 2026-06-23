@@ -53,8 +53,12 @@ export default function Schedule() {
   const navigate = useNavigate();
   const { tasks, isLoading, createTask, updateTask, toggleComplete, deleteTask } = usePersonalTasks();
   const { tasks: assigned, isLoading: assignedLoading } = useAssignedWorkspaceTasks();
+  const { stages, createStage, updateStage, deleteStage, reorderStages } = usePersonalStages();
   const [open, setOpen] = useState(false);
   const [selectedDay, setSelectedDay] = useState<Date>(new Date());
+  const [manageOpen, setManageOpen] = useState(false);
+  const [newStageName, setNewStageName] = useState("");
+  const [newStageColor, setNewStageColor] = useState("slate");
 
   // form
   const [title, setTitle] = useState("");
@@ -83,12 +87,23 @@ export default function Schedule() {
     return { overdue, today, upcoming, someday, done };
   }, [tasks]);
 
-  // Kanban columns
-  const kanban = useMemo(() => ({
-    todo: tasks.filter(t => t.status === 'todo'),
-    ongoing: tasks.filter(t => t.status === 'ongoing'),
-    completed: tasks.filter(t => t.status === 'completed'),
-  }), [tasks]);
+  // Group tasks by custom stage. Tasks without a stage_id fall back by legacy status.
+  const tasksByStage = useMemo(() => {
+    const map: Record<string, PersonalTask[]> = {};
+    stages.forEach(s => { map[s.id] = []; });
+    const firstTodo = stages.find(s => !s.is_done) ?? stages[0];
+    const firstDone = stages.find(s => s.is_done);
+    const inProgress = stages.find(s => /progress|ongoing|doing/i.test(s.name)) ?? firstTodo;
+    for (const t of tasks) {
+      let target: PersonalStage | undefined;
+      if (t.stage_id && map[t.stage_id]) target = stages.find(s => s.id === t.stage_id);
+      else if (t.status === 'completed') target = firstDone ?? firstTodo;
+      else if (t.status === 'ongoing') target = inProgress;
+      else target = firstTodo;
+      if (target) map[target.id].push(t);
+    }
+    return map;
+  }, [tasks, stages]);
 
   // Calendar: tasks for the selected day + day-marker set
   const scheduledDays = useMemo(() => {
