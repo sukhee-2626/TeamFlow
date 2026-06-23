@@ -491,6 +491,92 @@ export default function Schedule() {
           </TabsContent>
         </Tabs>
       </main>
+
+      <Dialog open={manageOpen} onOpenChange={setManageOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader><DialogTitle>Customize workflow stages</DialogTitle></DialogHeader>
+          <div className="space-y-2 max-h-[50vh] overflow-y-auto">
+            {stages.map((s) => {
+              const c = colorFor(s.color);
+              return (
+                <div key={s.id} className="flex items-center gap-2 rounded-lg border border-border p-2">
+                  <span className={`h-3 w-3 rounded-full ${c.dot}`} />
+                  <Input
+                    value={s.name}
+                    onChange={(e) => updateStage(s.id, { name: e.target.value })}
+                    className="h-8 flex-1"
+                  />
+                  <Select value={s.color} onValueChange={(v) => updateStage(s.id, { color: v })}>
+                    <SelectTrigger className="h-8 w-[110px]"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {STAGE_COLORS.map(col => (
+                        <SelectItem key={col.id} value={col.id}>
+                          <span className="flex items-center gap-2">
+                            <span className={`h-2 w-2 rounded-full ${col.dot}`} />{col.id}
+                          </span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    variant={s.is_done ? "default" : "outline"}
+                    size="sm"
+                    className="h-8 px-2"
+                    onClick={() => updateStage(s.id, { is_done: !s.is_done })}
+                    title="Marks tasks as completed"
+                  >
+                    <CheckCircle2 className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button variant="ghost" size="icon" className="h-8 w-8"
+                    onClick={() => {
+                      if (stages.length <= 1) return;
+                      if (confirm(`Delete "${s.name}"? Tasks in it will be unassigned from any stage.`)) {
+                        deleteStage(s.id);
+                      }
+                    }}
+                    disabled={stages.length <= 1}>
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              );
+            })}
+          </div>
+          <div className="flex items-center gap-2 pt-2 border-t border-border">
+            <Input
+              placeholder="New stage name"
+              value={newStageName}
+              onChange={(e) => setNewStageName(e.target.value)}
+              className="h-9 flex-1"
+            />
+            <Select value={newStageColor} onValueChange={setNewStageColor}>
+              <SelectTrigger className="h-9 w-[110px]"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {STAGE_COLORS.map(col => (
+                  <SelectItem key={col.id} value={col.id}>
+                    <span className="flex items-center gap-2">
+                      <span className={`h-2 w-2 rounded-full ${col.dot}`} />{col.id}
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button
+              size="sm"
+              onClick={async () => {
+                if (!newStageName.trim()) return;
+                await createStage({ name: newStageName.trim(), color: newStageColor });
+                setNewStageName(""); setNewStageColor("slate");
+              }}
+              disabled={!newStageName.trim()}
+            >
+              <Plus className="h-4 w-4 mr-1" />Add
+            </Button>
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setManageOpen(false)}>Done</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
