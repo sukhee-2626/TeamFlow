@@ -130,11 +130,27 @@ export default function Schedule() {
     setOpen(false);
   };
 
-  const moveTo = (t: PersonalTask, status: PersonalTaskStatus) =>
-    updateTask(t.id, {
+  const moveToStage = (t: PersonalTask, stage: PersonalStage) => {
+    const status: PersonalTaskStatus = stage.is_done
+      ? 'completed'
+      : stages[0]?.id === stage.id ? 'todo' : 'ongoing';
+    return updateTask(t.id, {
+      stage_id: stage.id,
       status,
-      completed_at: status === 'completed' ? new Date().toISOString() : null,
+      completed_at: stage.is_done ? new Date().toISOString() : null,
     });
+  };
+
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
+  const onStageDragEnd = (e: DragEndEvent) => {
+    const { active, over } = e;
+    if (!over || active.id === over.id) return;
+    const ids = stages.map(s => s.id);
+    const oldIdx = ids.indexOf(String(active.id));
+    const newIdx = ids.indexOf(String(over.id));
+    if (oldIdx < 0 || newIdx < 0) return;
+    reorderStages(arrayMove(ids, oldIdx, newIdx));
+  };
 
   if (authLoading || !user) {
     return (
@@ -189,7 +205,7 @@ export default function Schedule() {
       </div>
     );
 
-  const KanbanCard = ({ t }: { t: PersonalTask }) => (
+  const KanbanCard = ({ t, prev, next }: { t: PersonalTask; prev?: PersonalStage; next?: PersonalStage }) => (
     <Card className="p-3 space-y-2 hover:shadow-md transition-shadow">
       <div className="flex items-start justify-between gap-2">
         <h4 className="font-medium text-sm leading-snug">{t.title}</h4>
@@ -206,16 +222,16 @@ export default function Schedule() {
         </span>
       </div>
       <div className="flex items-center gap-1 pt-1 border-t border-border/50">
-        {t.status !== 'todo' && (
+        {prev && (
           <Button variant="ghost" size="sm" className="h-7 px-2 text-xs"
-            onClick={() => moveTo(t, t.status === 'completed' ? 'ongoing' : 'todo')}>
-            <ArrowLeftCircle className="h-3.5 w-3.5 mr-1" />Back
+            onClick={() => moveToStage(t, prev)} title={`Move to ${prev.name}`}>
+            <ArrowLeftCircle className="h-3.5 w-3.5 mr-1" />{prev.name}
           </Button>
         )}
-        {t.status !== 'completed' && (
+        {next && (
           <Button variant="ghost" size="sm" className="h-7 px-2 text-xs ml-auto"
-            onClick={() => moveTo(t, t.status === 'todo' ? 'ongoing' : 'completed')}>
-            {t.status === 'todo' ? 'Start' : 'Complete'}
+            onClick={() => moveToStage(t, next)} title={`Move to ${next.name}`}>
+            {next.name}
             <ArrowRightCircle className="h-3.5 w-3.5 ml-1" />
           </Button>
         )}
@@ -226,24 +242,42 @@ export default function Schedule() {
     </Card>
   );
 
-  const KanbanColumn = ({ title, status, items, tint }: {
-    title: string; status: PersonalTaskStatus; items: PersonalTask[]; tint: string;
-  }) => (
-    <div className="flex-1 min-w-[260px]">
-      <div className={`rounded-xl p-3 min-h-[400px] ${tint}`}>
-        <div className="flex items-center justify-between mb-3 px-1">
-          <h4 className="font-semibold text-sm">{title}</h4>
-          <Badge variant="secondary" className="h-5 px-2 text-xs">{items.length}</Badge>
-        </div>
-        <div className="space-y-2">
-          {items.map(t => <KanbanCard key={t.id} t={t} />)}
-          {items.length === 0 && (
-            <p className="text-xs text-muted-foreground text-center py-6">No tasks</p>
-          )}
+  const SortableKanbanColumn = ({ stage, items, prev, next }: {
+    stage: PersonalStage; items: PersonalTask[]; prev?: PersonalStage; next?: PersonalStage;
+  }) => {
+    const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
+      useSortable({ id: stage.id });
+    const style = {
+      transform: CSS.Transform.toString(transform),
+      transition,
+      opacity: isDragging ? 0.6 : 1,
+    };
+    const c = colorFor(stage.color);
+    return (
+      <div ref={setNodeRef} style={style} className="flex-shrink-0 w-[280px]">
+        <div className={`rounded-xl p-3 min-h-[400px] ${c.tint}`}>
+          <div className="flex items-center justify-between mb-3 px-1">
+            <div className="flex items-center gap-2 min-w-0">
+              <button {...attributes} {...listeners}
+                className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground"
+                aria-label="Reorder stage">
+                <GripVertical className="h-4 w-4" />
+              </button>
+              <span className={`h-2 w-2 rounded-full ${c.dot}`} />
+              <h4 className="font-semibold text-sm truncate">{stage.name}</h4>
+            </div>
+            <Badge variant="secondary" className="h-5 px-2 text-xs">{items.length}</Badge>
+          </div>
+          <div className="space-y-2">
+            {items.map(t => <KanbanCard key={t.id} t={t} prev={prev} next={next} />)}
+            {items.length === 0 && (
+              <p className="text-xs text-muted-foreground text-center py-6">No tasks</p>
+            )}
+          </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <div className="min-h-screen bg-background page-transition">
