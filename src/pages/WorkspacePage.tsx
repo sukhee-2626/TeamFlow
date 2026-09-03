@@ -2,12 +2,9 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { 
-  LayoutGrid, 
-  ArrowLeft, 
   Plus,
   Users,
   Settings,
-  Loader2,
   Crown,
   LayoutDashboard,
   Workflow as WorkflowIcon
@@ -25,6 +22,8 @@ import { WorkspaceChat } from "@/components/workspace/WorkspaceChat";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import { AppHeader } from "@/components/layout/AppHeader";
+import { AppFooter } from "@/components/layout/AppFooter";
 
 export default function WorkspacePage() {
   const { id } = useParams<{ id: string }>();
@@ -101,7 +100,6 @@ export default function WorkspacePage() {
         <div className="text-center card-glass p-8 animate-scale-in">
           <h2 className="text-xl font-semibold text-foreground mb-4">Workspace not found</h2>
           <Button variant="outline" onClick={() => navigate("/dashboard")} className="hover-lift">
-            <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Dashboard
           </Button>
         </div>
@@ -113,41 +111,27 @@ export default function WorkspacePage() {
   const workflowTasks = tasks.filter(t => t.workflow_id === activeWorkflow);
 
   return (
-    <div className="min-h-screen bg-wallpaper relative overflow-hidden page-transition">
-      {/* Floating orbs */}
-      <div className="floating-orb floating-orb-1"></div>
-      <div className="floating-orb floating-orb-2"></div>
-
-      {/* Header */}
-      <header className="sticky top-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-lg">
-        <div className="container flex h-16 items-center justify-between">
-          <div className="flex items-center gap-4 animate-fade-in">
-            <Button variant="ghost" size="icon" onClick={() => navigate("/dashboard")} className="hover-lift">
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-            <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-primary animate-pulse-glow">
-                <LayoutGrid className="h-5 w-5 text-primary-foreground" />
-              </div>
-              <span className="text-xl font-bold text-foreground">{workspace.name}</span>
-              {isManager && (
-                <Badge className="bg-warning/20 text-warning border-warning/30 animate-bounce-in">
-                  <Crown className="h-3 w-3 mr-1" />
-                  Owner
-                </Badge>
-              )}
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3 animate-fade-in" style={{ animationDelay: "0.1s" }}>
+    <div className="flex min-h-screen flex-col bg-wallpaper page-transition">
+      <AppHeader
+        title={workspace.name}
+        subtitle="Team workspace"
+        backTo="/dashboard"
+        backLabel="Back to dashboard"
+        badge={isManager ? (
+          <Badge className="border-warning/30 bg-warning/15 text-accent-foreground">
+            <Crown className="mr-1 h-3 w-3" />Owner
+          </Badge>
+        ) : undefined}
+        actions={
+          <>
             <WorkspaceChat workspaceId={id || ""} workspaceName={workspace.name} members={members} />
-            <div className="flex items-center gap-2">
-              <span className="h-2 w-2 rounded-full bg-success animate-pulse"></span>
-              <span className="text-sm text-muted-foreground">{user.email}</span>
+            <div className="hidden items-center gap-2 md:flex">
+              <span className="h-2 w-2 rounded-full bg-success" />
+              <span className="max-w-48 truncate text-sm text-muted-foreground">{user.email}</span>
             </div>
-          </div>
-        </div>
-      </header>
+          </>
+        }
+      />
 
       {/* Main content */}
       <main className="container py-6 relative z-10 animate-slide-up">
@@ -253,6 +237,8 @@ export default function WorkspacePage() {
           )}
         </Tabs>
       </main>
+
+      <AppFooter />
 
       <CreateWorkflowDialog
         open={showCreateWorkflow}

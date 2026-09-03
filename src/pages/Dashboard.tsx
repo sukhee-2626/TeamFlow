@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { 
-  LayoutGrid, 
   Plus, 
   LogOut, 
   Folder,
@@ -16,6 +15,8 @@ import { WorkspaceCard } from "@/components/workspace/WorkspaceCard";
 import { CreateWorkspaceDialog } from "@/components/workspace/CreateWorkspaceDialog";
 import { JoinWorkspaceDialog } from "@/components/workspace/JoinWorkspaceDialog";
 import { useToast } from "@/hooks/use-toast";
+import { AppHeader } from "@/components/layout/AppHeader";
+import { AppFooter } from "@/components/layout/AppFooter";
 
 export default function Dashboard() {
   const { user, isLoading: authLoading, signOut } = useAuth();
@@ -53,55 +54,43 @@ export default function Dashboard() {
   const userEmail = user?.email || "";
 
   return (
-    <div className="min-h-screen bg-wallpaper relative overflow-hidden page-transition">
-      {/* Floating orbs */}
-      <div className="floating-orb floating-orb-1"></div>
-      <div className="floating-orb floating-orb-2"></div>
-
-      {/* Header */}
-      <header className="sticky top-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-lg">
-        <div className="container flex h-16 items-center justify-between">
-          <div className="flex items-center gap-2 animate-fade-in">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-primary animate-pulse-glow">
-              <LayoutGrid className="h-5 w-5 text-primary-foreground" />
+    <div className="flex min-h-screen flex-col bg-wallpaper page-transition">
+      <AppHeader
+        subtitle="Workspace command center"
+        actions={
+          <>
+            <div className="hidden items-center gap-2 md:flex">
+              <span className="h-2 w-2 rounded-full bg-success" />
+              <span className="max-w-56 truncate text-sm text-muted-foreground">{userEmail}</span>
             </div>
-            <span className="text-xl font-bold text-foreground">FlowDesk</span>
-          </div>
-
-          <div className="flex items-center gap-4 animate-fade-in" style={{ animationDelay: "0.1s" }}>
-            <div className="flex items-center gap-2">
-              <span className="h-2 w-2 rounded-full bg-success animate-pulse"></span>
-              <span className="text-sm text-muted-foreground">{userEmail}</span>
-            </div>
-            <Button variant="ghost" size="icon" onClick={handleSignOut} className="hover-lift">
+            <Button variant="ghost" size="icon" onClick={handleSignOut} aria-label="Sign out">
               <LogOut className="h-4 w-4" />
             </Button>
-          </div>
-        </div>
-      </header>
+          </>
+        }
+      />
 
       <main className="container py-8 relative z-10">
         {/* Welcome section */}
-        <div className="flex items-start justify-between mb-8 animate-slide-up">
+        <div className="mb-8 flex flex-col items-start justify-between gap-5 lg:flex-row lg:items-end">
           <div>
-            <h1 className="text-3xl font-bold text-foreground mb-2 flex items-center gap-2">
-              Welcome back! <span className="text-2xl animate-bounce-in" style={{ animationDelay: "0.3s" }}>👋</span>
-            </h1>
+            <p className="mb-2 text-xs font-semibold uppercase text-accent-foreground">Your workspaces</p>
+            <h1 className="mb-2 font-display text-3xl font-semibold text-foreground">Welcome back</h1>
             <p className="text-muted-foreground">
               Manage your workspaces and collaborate with your team
             </p>
           </div>
           
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => navigate("/schedule")} className="hover-lift">
+          <div className="flex w-full flex-wrap gap-2 lg:w-auto">
+            <Button variant="outline" onClick={() => navigate("/schedule")}>
               <CalendarDays className="h-4 w-4 mr-2" />
               My Schedule
             </Button>
-            <Button variant="outline" onClick={() => setShowJoinDialog(true)} className="hover-lift">
+            <Button variant="outline" onClick={() => setShowJoinDialog(true)}>
               <UserPlus className="h-4 w-4 mr-2" />
               Join with Code
             </Button>
-            <Button onClick={() => setShowCreateDialog(true)} className="hover-lift">
+            <Button onClick={() => setShowCreateDialog(true)}>
               <Plus className="h-4 w-4 mr-2" />
               New Workspace
             </Button>
@@ -143,6 +132,8 @@ export default function Dashboard() {
           </div>
         )}
       </main>
+
+      <AppFooter />
 
       <CreateWorkspaceDialog
         open={showCreateDialog}
