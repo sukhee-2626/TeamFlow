@@ -35,35 +35,34 @@ const features = [
 
 export function Features() {
   return (
-    <section className="py-24 lg:py-32 bg-wallpaper relative overflow-hidden">
-      {/* Background decoration */}
-      <div className="absolute inset-0 bg-gradient-mesh opacity-50"></div>
-
-      <div className="container relative z-10">
-        {/* Section header */}
-        <div className="mx-auto max-w-2xl text-center mb-16 animate-slide-up">
-          <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl mb-4">
-            Everything you need to manage projects
+    <section id="features" className="border-b border-border bg-background py-20 lg:py-28">
+      <div className="container">
+        <div className="mb-14 max-w-2xl">
+          <p className="mb-3 text-xs font-semibold uppercase text-accent-foreground">Built for execution</p>
+          <h2 className="mb-4 font-display text-3xl font-semibold text-foreground sm:text-4xl">
+            One system for the work that matters
           </h2>
           <p className="text-lg text-muted-foreground">
-            Simple, powerful tools designed for teams that ship.
+            Bring planning, communication, and delivery into a calm, accountable workflow.
           </p>
         </div>
 
-        {/* Features grid */}
-        <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3 stagger-children">
-          {features.map((feature) => (
+        <div className="grid border-l border-t border-border sm:grid-cols-2 lg:grid-cols-3">
+          {features.map((feature, index) => (
             <div
               key={feature.title}
-              className="card-glass p-6 hover-lift group"
+              className="group border-b border-r border-border bg-card p-7 transition-colors hover:bg-secondary/60"
             >
-              <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-primary/10 text-primary group-hover:bg-gradient-primary group-hover:text-primary-foreground transition-all duration-300">
-                <feature.icon className="h-6 w-6" />
+              <div className="mb-8 flex items-center justify-between">
+                <div className="inline-flex h-10 w-10 items-center justify-center rounded-md bg-accent text-accent-foreground">
+                  <feature.icon className="h-5 w-5" />
+                </div>
+                <span className="font-display text-sm text-muted-foreground">0{index + 1}</span>
               </div>
-              <h3 className="mb-2 text-lg font-semibold text-foreground group-hover:text-primary transition-colors">
+              <h3 className="mb-2 font-display text-lg font-semibold text-foreground">
                 {feature.title}
               </h3>
-              <p className="text-muted-foreground">
+              <p className="text-sm leading-relaxed text-muted-foreground">
                 {feature.description}
               </p>
             </div>

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { format, isToday, isTomorrow, isPast, isSameDay, parseISO } from "date-fns";
 import {
-  ArrowLeft, CalendarDays, Plus, Trash2, Loader2, CheckCircle2,
+  CalendarDays, Plus, Trash2, Loader2, CheckCircle2,
   Circle, Clock, Flag, Briefcase, ListTodo, KanbanSquare, ArrowLeftCircle, ArrowRightCircle,
   GripVertical, Pencil, Settings2,
 } from "lucide-react";
@@ -33,6 +33,8 @@ import {
   SortableContext, horizontalListSortingStrategy, useSortable, arrayMove,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { AppHeader } from "@/components/layout/AppHeader";
+import { AppFooter } from "@/components/layout/AppFooter";
 
 const priorityColor: Record<PersonalTaskPriority, string> = {
   low: "bg-blue-500/15 text-blue-600 border-blue-500/30",
@@ -280,23 +282,13 @@ export default function Schedule() {
   };
 
   return (
-    <div className="min-h-screen bg-background page-transition">
-      <header className="sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur-lg">
-        <div className="container flex h-16 items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={() => navigate("/dashboard")}>
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-            <div className="flex items-center gap-2">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-primary">
-                <CalendarDays className="h-5 w-5 text-primary-foreground" />
-              </div>
-              <div>
-                <h1 className="font-bold leading-tight">My Schedule</h1>
-                <p className="text-xs text-muted-foreground">Your personal to-dos & assigned work</p>
-              </div>
-            </div>
-          </div>
+    <div className="flex min-h-screen flex-col bg-wallpaper page-transition">
+      <AppHeader
+        title="My Schedule"
+        subtitle="Personal planning and assigned work"
+        backTo="/dashboard"
+        backLabel="Back to dashboard"
+        actions={
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
               <Button><Plus className="h-4 w-4 mr-2" />New Task</Button>
@@ -330,8 +322,8 @@ export default function Schedule() {
               </DialogFooter>
             </DialogContent>
           </Dialog>
-        </div>
-      </header>
+        }
+      />
 
       <main className="container py-8 max-w-3xl">
         <Tabs defaultValue="personal">
@@ -491,6 +483,8 @@ export default function Schedule() {
           </TabsContent>
         </Tabs>
       </main>
+
+      <AppFooter />
 
       <Dialog open={manageOpen} onOpenChange={setManageOpen}>
         <DialogContent className="max-w-lg">

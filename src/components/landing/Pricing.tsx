@@ -34,7 +34,7 @@ const tiers = [
 
 export function Pricing() {
   return (
-    <section className="py-24 bg-wallpaper relative overflow-hidden">
+    <section id="pricing" className="py-24 bg-wallpaper relative overflow-hidden">
       <div className="absolute inset-0 bg-gradient-mesh opacity-40"></div>
       <div className="container relative z-10">
         <div className="text-center max-w-2xl mx-auto mb-16 animate-slide-up">
