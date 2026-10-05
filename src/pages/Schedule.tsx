@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { format, isToday, isTomorrow, isPast, isSameDay, parseISO } from "date-fns";
+import { format, isToday, isTomorrow, isPast, isSameDay, isBefore, startOfDay, parseISO } from "date-fns";
 import {
   CalendarDays, Plus, Trash2, Loader2, CheckCircle2,
   Circle, Clock, Flag, Briefcase, ListTodo, KanbanSquare, ArrowLeftCircle, ArrowRightCircle,
@@ -58,9 +58,15 @@ export default function Schedule() {
   const { stages, createStage, updateStage, deleteStage, reorderStages } = usePersonalStages();
   const [open, setOpen] = useState(false);
   const [selectedDay, setSelectedDay] = useState<Date>(new Date());
+  const [currentTime, setCurrentTime] = useState(() => new Date());
   const [manageOpen, setManageOpen] = useState(false);
   const [newStageName, setNewStageName] = useState("");
   const [newStageColor, setNewStageColor] = useState("slate");
+
+  useEffect(() => {
+    const interval = window.setInterval(() => setCurrentTime(new Date()), 30_000);
+    return () => window.clearInterval(interval);
+  }, []);
 
   // form
   const [title, setTitle] = useState("");
@@ -107,18 +113,37 @@ export default function Schedule() {
     return map;
   }, [tasks, stages]);
 
-  // Calendar: tasks for the selected day + day-marker set
-  const scheduledDays = useMemo(() => {
-    const set = new Set<string>();
-    tasks.forEach(t => {
-      if (t.scheduled_at) set.add(format(parseISO(t.scheduled_at), 'yyyy-MM-dd'));
-    });
-    return set;
-  }, [tasks]);
+  // Personal plans use their scheduled time; assigned team tasks use their deadline.
+  const calendarItems = useMemo(() => [
+    ...tasks.filter(t => t.scheduled_at).map(task => ({
+      id: `personal-${task.id}`,
+      title: task.title,
+      date: parseISO(task.scheduled_at as string),
+      source: "personal" as const,
+      task,
+    })),
+    ...assigned.filter(t => t.deadline).map(task => ({
+      id: `team-${task.id}`,
+      title: task.title,
+      date: parseISO(task.deadline),
+      source: "team" as const,
+      task,
+    })),
+  ], [tasks, assigned]);
 
-  const dayTasks = useMemo(() =>
-    tasks.filter(t => t.scheduled_at && isSameDay(parseISO(t.scheduled_at), selectedDay))
-  , [tasks, selectedDay]);
+  const scheduledDays = useMemo(() =>
+    new Set(calendarItems.map(item => format(item.date, 'yyyy-MM-dd')))
+  , [calendarItems]);
+
+  const selectedDayItems = useMemo(() => calendarItems
+    .filter(item => isSameDay(item.date, selectedDay))
+    .sort((a, b) => a.date.getTime() - b.date.getTime())
+  , [calendarItems, selectedDay]);
+
+  const todayItems = calendarItems.filter(item => isToday(item.date));
+  const overdueCount = calendarItems.filter(item =>
+    item.task.status !== "completed" && isBefore(startOfDay(item.date), startOfDay(currentTime))
+  ).length;
 
   const submit = async () => {
     if (!title.trim()) return;
@@ -325,17 +350,35 @@ export default function Schedule() {
         }
       />
 
-      <main className="container py-8 max-w-3xl">
-        <Tabs defaultValue="personal">
-          <TabsList className="mb-6">
+      <main className="container py-8 max-w-6xl">
+        <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <Card className="flex items-center gap-3 p-4">
+            <Clock className="h-5 w-5 shrink-0 text-primary" />
+            <div><p className="text-xs text-muted-foreground">Local time</p><p className="font-semibold tabular-nums">{format(currentTime, "h:mm a")}</p></div>
+          </Card>
+          <Card className="flex items-center gap-3 p-4">
+            <CalendarDays className="h-5 w-5 shrink-0 text-primary" />
+            <div><p className="text-xs text-muted-foreground">Planned today</p><p className="font-semibold">{todayItems.length} {todayItems.length === 1 ? "item" : "items"}</p></div>
+          </Card>
+          <Card className="flex items-center gap-3 p-4">
+            <Flag className="h-5 w-5 shrink-0 text-destructive" />
+            <div><p className="text-xs text-muted-foreground">Past due</p><p className="font-semibold">{overdueCount}</p></div>
+          </Card>
+          <Card className="flex items-center gap-3 p-4">
+            <CheckCircle2 className="h-5 w-5 shrink-0 text-success" />
+            <div><p className="text-xs text-muted-foreground">Personal completed</p><p className="font-semibold">{tasks.filter(t => t.status === "completed").length}</p></div>
+          </Card>
+        </div>
+        <Tabs defaultValue="calendar">
+          <TabsList className="mb-6 flex h-auto flex-wrap">
+            <TabsTrigger value="calendar" className="gap-2">
+              <CalendarDays className="h-4 w-4" />Calendar
+            </TabsTrigger>
             <TabsTrigger value="personal" className="gap-2">
               <ListTodo className="h-4 w-4" />Personal ({tasks.filter(t => t.status !== 'completed').length})
             </TabsTrigger>
             <TabsTrigger value="kanban" className="gap-2">
               <KanbanSquare className="h-4 w-4" />My Workflow
-            </TabsTrigger>
-            <TabsTrigger value="calendar" className="gap-2">
-              <CalendarDays className="h-4 w-4" />Calendar
             </TabsTrigger>
             <TabsTrigger value="assigned" className="gap-2">
               <Briefcase className="h-4 w-4" />Assigned to me ({assigned.length})
@@ -404,7 +447,7 @@ export default function Schedule() {
           </TabsContent>
 
           <TabsContent value="calendar">
-            <div className="grid md:grid-cols-[auto_1fr] gap-6">
+            <div className="grid gap-6 lg:grid-cols-[auto_minmax(0,1fr)]">
               <Card className="p-3 w-fit">
                 <Calendar
                   mode="single"
@@ -424,9 +467,9 @@ export default function Schedule() {
                   <h3 className="font-semibold">
                     {format(selectedDay, 'EEEE, MMMM d')}
                   </h3>
-                  <Badge variant="secondary">{dayTasks.length} task{dayTasks.length === 1 ? '' : 's'}</Badge>
+                  <Badge variant="secondary">{selectedDayItems.length} item{selectedDayItems.length === 1 ? '' : 's'}</Badge>
                 </div>
-                {dayTasks.length === 0 ? (
+                {selectedDayItems.length === 0 ? (
                   <Card className="p-8 text-center">
                     <CalendarDays className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
                     <p className="text-sm text-muted-foreground">Nothing scheduled for this day.</p>
@@ -438,9 +481,31 @@ export default function Schedule() {
                     </Button>
                   </Card>
                 ) : (
-                  dayTasks
-                    .sort((a, b) => (a.scheduled_at || '').localeCompare(b.scheduled_at || ''))
-                    .map(renderTask)
+                  selectedDayItems.map(item => item.source === "personal" ? (
+                    <div key={item.id} className="space-y-2">
+                      <Badge variant="outline">Personal</Badge>
+                      {renderTask(item.task)}
+                    </div>
+                  ) : (
+                    <Card key={item.id} className="flex items-start gap-3 p-4">
+                      <Briefcase className="mt-1 h-4 w-4 shrink-0 text-primary" />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-start justify-between gap-2">
+                          <h3 className="font-medium">{item.title}</h3>
+                          <Badge variant="outline">Team · {item.task.status}</Badge>
+                        </div>
+                        {item.task.description && <p className="mt-1 text-sm text-muted-foreground">{item.task.description}</p>}
+                        <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                          <span className="flex items-center gap-1"><Clock className="h-3 w-3" />Due {format(item.date, "h:mm a")}</span>
+                          {item.task.workspace?.name && (
+                            <Link to={`/workspace/${item.task.workspace.id}`} className="hover:text-primary">
+                              {item.task.workspace.name}
+                            </Link>
+                          )}
+                        </div>
+                      </div>
+                    </Card>
+                  ))
                 )}
               </div>
             </div>

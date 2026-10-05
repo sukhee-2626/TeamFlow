@@ -120,7 +120,6 @@ export function useAssignedWorkspaceTasks() {
       .from('tasks')
       .select('*, workspace:workspaces(id, name)')
       .eq('assigned_user_id', user.id)
-      .neq('status', 'completed')
       .order('deadline', { ascending: true });
     setTasks(rows || []);
     setIsLoading(false);
