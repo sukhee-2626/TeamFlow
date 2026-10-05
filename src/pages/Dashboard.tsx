@@ -25,6 +25,13 @@ export default function Dashboard() {
   const [showJoinDialog, setShowJoinDialog] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [now, setNow] = useState(new Date());
+
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 30000);
+    return () => clearInterval(id);
+  }, []);
+
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -59,6 +66,10 @@ export default function Dashboard() {
         subtitle="Workspace command center"
         actions={
           <>
+            <div className="hidden text-right leading-tight lg:block">
+              <p className="text-sm font-semibold text-foreground">{now.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</p>
+              <p className="text-xs text-muted-foreground">{now.toLocaleDateString([], { weekday: "short", day: "numeric", month: "short", year: "numeric" })}</p>
+            </div>
             <div className="hidden items-center gap-2 md:flex">
               <span className="h-2 w-2 rounded-full bg-success" />
               <span className="max-w-56 truncate text-sm text-muted-foreground">{userEmail}</span>
