@@ -10,4 +10,4 @@
 - [ ] Add per-user Google Calendar connection and task-calendar integration.
 - [ ] Add email notifications for task events and deadline reminders; confirm sender-domain readiness first.
 - [ ] Add a Notion OAuth setup form for the client ID and secret the user will provide; support personal Notion storage and a shared team workspace.
-- [ ] Configure a FlowDesk-labeled Notion OAuth client using the redirect URI supplied by the secure Notion connection flow.
+- [ ] Configure and link the FlowDesk-labeled Notion OAuth client using the secure setup flow; retry requested.
