@@ -9,3 +9,4 @@
 - [ ] Add the chosen shared Notion workspace connection to the app.
 - [ ] Add per-user Google Calendar connection and task-calendar integration.
 - [ ] Add email notifications for task events and deadline reminders; confirm sender-domain readiness first.
+- [ ] Add a Notion OAuth setup form for the client ID and secret the user will provide; support personal Notion storage and a shared team workspace.
